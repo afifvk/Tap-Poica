@@ -5,12 +5,12 @@ public class NoteObject :MonoBehaviour
     public bool canBePressed;
     public KeyCode keyToPress;
 
-    public GameObject hiteffect, goodeffect , perfecteffect, misseffect;
+    public GameObject hiteffect, goodeffect, perfecteffect, misseffect;
 
 
     void Start()
     {
-        
+
     }
 
     void Update()
@@ -21,7 +21,7 @@ public class NoteObject :MonoBehaviour
         gameObject.SetActive(false);
         //GameManager.instance.NoteHit();
 
-        if (Mathf.Abs(transform.position.y) > 0.25)
+        if(Mathf.Abs(transform.position.y) > 0.25)
         {
             Debug.Log("Hit!");
             GameManager.Instance.NormalHit();
@@ -40,14 +40,12 @@ public class NoteObject :MonoBehaviour
             Instantiate(perfecteffect, transform.position, perfecteffect.transform.rotation);
 
         }
-    } 
+    }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Activator"))
-        {
-            canBePressed = true;
-        }
+        if(!other.CompareTag("Activator")) return;
+        canBePressed = true;
     }
 
     private void OnTriggerExit2D(Collider2D other)

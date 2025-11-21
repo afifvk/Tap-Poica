@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using System.Collections;
 
 public class GameManager :MonoBehaviour
 {
@@ -56,24 +55,18 @@ public class GameManager :MonoBehaviour
 
     void Update()
     {
-        if(!_startingPoint)
+        if(!_startingPoint && Input.anyKeyDown)
         {
-            if(Input.anyKeyDown)
-            {
-                _startingPoint = true;
-                theBs.hasStarted = true;
-                audioSource.Play();
-            }
+            _startingPoint = true;
+            theBs.hasStarted = true;
+            audioSource.Play();
+            return;
         }
-        else
-        {
-            // ✅ Only show results when song ends, and only once
-            if(!_resultsShown && !audioSource.isPlaying)
-            {
-                ShowResults();
-                _resultsShown = true;
-            }
-        }
+
+        // ✅ Only show results when song ends, and only once
+        if(_resultsShown || audioSource.isPlaying) return;
+        ShowResults();
+        _resultsShown = true;
     }
 
     void ShowResults()
