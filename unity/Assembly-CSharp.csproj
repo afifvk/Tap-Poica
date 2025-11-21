@@ -47,10 +47,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\EffectObject.cs" />
+    <Compile Include="Assets\Scripts\BLE\BleObject.cs" />
+    <Compile Include="Assets\Scripts\BLE\Unity\BleUnityEvents.cs" />
+    <Compile Include="Assets\Scripts\BLE\Commands\WriteToCharacteristic.cs" />
+    <Compile Include="Assets\Scripts\BLE\Commands\DiscoverDevices.cs" />
+    <Compile Include="Assets\Scripts\BLE\BleManager.cs" />
+    <Compile Include="Assets\Example\Scripts\ExampleBleInteractor.cs" />
+    <Compile Include="Assets\Scripts\BLE\Commands\ReadFromCharacteristic.cs" />
     <Compile Include="Assets\Scripts\BeatScroller.cs" />
+    <Compile Include="Assets\Scripts\BLE\BleAdapter.cs" />
+    <Compile Include="Assets\Scripts\BLE\Commands\SubscribeToCharacteristic.cs" />
     <Compile Include="Assets\Scripts\ButtonController.cs" />
+    <Compile Include="Assets\Scripts\BLE\Commands\ConnectToDevice.cs" />
     <Compile Include="Assets\Scripts\NoteObject.cs" />
     <Compile Include="Assets\Scripts\GameManager.cs" />
+    <Compile Include="Assets\Scripts\BLE\Commands\Base\BleCommand.cs" />
+    <Compile Include="Assets\Scripts\BLE\Extension\UuidHelper.cs" />
     <None Include="Assets\Resources\BillingMode.json" />
     <Reference Include="UnityEngine">
       <HintPath>C:\Program Files\Unity\Hub\Editor\6000.0.62f1-x86_64\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
