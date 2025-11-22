@@ -1,7 +1,7 @@
 #include "Timer.h"
 
 uint32_t millisOffset() {
-  static unsigned long millisOffsetCount = 0;
+  static uint32_t millisOffsetCount = 0;
   return (millisOffsetCount * 1000ul) + millis();
 }
 
@@ -22,7 +22,7 @@ uint32_t Timer::getSleepTimer() const { return _sleepTimer; }
 
 void Timer::handleSleep() {
   if ((millisOffset() >
-       getSleepTimer() + ((unsigned long)sleepTimeout * 1000ul)) &&
+       getSleepTimer() + ((uint32_t)sleepTimeout * 1000ul)) &&
       displayOn) {
     displayOn = false;
     _display.off();

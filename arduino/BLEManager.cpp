@@ -1,15 +1,28 @@
-#include <STBLE.h>
-#include <cstdint>
-
 #include "BLEManager.h"
 #include "globals.h"
-
-#define BLE_DEVICE_NAME "TinyMallet"
+#include <STBLE.h>
 
 #define ADV_INTERVAL_MIN_MS 100
 #define ADV_INTERVAL_MAX_MS 200
 #define CONN_INTERVAL_MIN_MS 50
 #define CONN_INTERVAL_MAX_MS 100
+
+uint32_t unpackInt32(uint8_t *src) {
+  uint32_t val = src[3];
+  val <<= 8;
+  val = src[2];
+  val <<= 8;
+  val = src[1];
+  val <<= 8;
+  return val | src[0];
+}
+
+void packInt32(uint8_t *d, uint32_t val) {
+  d[0] = val;
+  d[1] = val >> 8;
+  d[2] = val >> 16;
+  d[3] = val >> 24;
+}
 
 uint8_t hexToNib(char h) {
   if (h >= '0' && h <= '9')
@@ -18,9 +31,10 @@ uint8_t hexToNib(char h) {
     return h - 'a' + 10;
   else if (h >= 'A' && h <= 'F')
     return h - 'A' + 10;
+  return 0;
 }
 
-void uuidStrToByte(char *in, uint8_t *out, uint8_t byte_size) {
+void uuidStrToByte(const char *in, uint8_t *out, uint8_t byte_size) {
   uint8_t nibCount = 0;
   uint8_t temp = 0;
   if (*in == '0' && *(in + 1) == 'x')
@@ -38,7 +52,7 @@ void uuidStrToByte(char *in, uint8_t *out, uint8_t byte_size) {
     in++;
   }
   PRINTF("UUID: ");
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < (byte_size / 8); i++) {
     PRINTF("%02X", out[i]);
   }
   PRINTF("\n");
@@ -46,17 +60,21 @@ void uuidStrToByte(char *in, uint8_t *out, uint8_t byte_size) {
 
 BLEManager *BLEManager::instance = NULL;
 
-BLEManager::BLEManager()
+BLEManager::BLEManager(const char *deviceName, const char *advUUID,
+                       void (*onConnect)(void), void (*onDisconnect)(void),
+                       void (*onBond)(void))
     : _bleRxBufferLen(0), bleConnectionState(false), _setConnectable(1),
-      _connectionHandle(0), _connected(FALSE), _lastProcedureCompleted(0) {}
+      _connectionHandle(0), _connected(false), _lastProcedureCompleted(0),
+      _deviceName(deviceName), _advUUID(advUUID) {
+  phoneConnection.onConnect = onConnect;
+  phoneConnection.onDisconnect = onDisconnect;
+  phoneConnection.onBond = onBond;
+}
 
 void BLEManager::setInstance(BLEManager *inst) { instance = inst; }
 
 void BLEManager::begin() {
   setInstance(this);
-
-  _phoneConnection.onConnect = &BLEManager::onConnect;
-  _phoneConnection.onDisconnect = &BLEManager::onDisconnect;
 
   HCI_Init();
   /* Init SPI interface */
@@ -81,48 +99,27 @@ void BLEManager::begin() {
     PRINTF("GATT_Init failed.\n");
   }
 
-  uint16_t service_handle, dev_name_char_handle, appearance_char_handle;
-  ret = aci_gap_init_IDB05A1(GAP_PERIPHERAL_ROLE_IDB05A1, 0,
-                             strlen(BLE_DEVICE_NAME), &service_handle,
-                             &dev_name_char_handle, &appearance_char_handle);
+  uint8_t deviceNameLen = strlen(_deviceName);
+  uint16_t serviceHandle, _deviceNameCharHandle, appearanceCharHandle;
+  ret = aci_gap_init_IDB05A1(GAP_PERIPHERAL_ROLE_IDB05A1, 0, deviceNameLen,
+                             &serviceHandle, &_deviceNameCharHandle,
+                             &appearanceCharHandle);
 
   if (ret) {
     PRINTF("GAP_Init failed.\n");
   }
 
-  ret = aci_gatt_update_char_value(service_handle, dev_name_char_handle, 0,
-                                   strlen(BLE_DEVICE_NAME),
-                                   (uint8_t *)BLE_DEVICE_NAME);
+  ret = aci_gatt_update_char_value(serviceHandle, _deviceNameCharHandle, 0,
+                                   deviceNameLen, (uint8_t *)_deviceName);
 
   if (ret) {
     PRINTF("aci_gatt_update_char_value failed.\n");
   } else {
-    PRINTF("BLE Stack Initialized.\n");
+    PRINTF("BLE Stack setupServicesd.\n");
   }
 
-  // Add UART service
+  setupServices();
 
-  ret = addService(&uartService, "6e400001-b5a3-f393-e0a9-e50e24dcca9e",
-                   PRIMARY_SERVICE, 7);
-
-  if (ret) {
-    PRINTF("Error while adding UART service.\n");
-  }
-
-  // Add UART Tx Characteristic
-  ret = addCharacteristic(&uartService, &uartTxChar,
-                          "6e400002-b5a3-f393-e0a9-e50e24dcca9e", 20,
-                          CHAR_PROP_WRITE_WITHOUT_RESP, ATTR_PERMISSION_NONE,
-                          GATT_NOTIFY_ATTRIBUTE_WRITE, MAX_ENCRY_KEY_SIZE);
-
-  if (ret) {
-    PRINTF("Error while adding UART characteristic.\n");
-  }
-
-  // Add UART Rx Characteristic
-  ret = addCharacteristic(
-      &uartService, &uartRxChar, "6e400003-b5a3-f393-e0a9-e50e24dcca9e", 20,
-      CHAR_PROP_NOTIFY, ATTR_PERMISSION_NONE, 0, MAX_ENCRY_KEY_SIZE);
   if (ret) {
     PRINTF("Error while adding UART characteristic.\n");
   }
@@ -145,15 +142,13 @@ void BLEManager::begin() {
   if (ret) {
     PRINTF("aci_gap_set_auth_requirement failed.\n");
   }
-
-  _phoneConnection.onBond = &BLEManager::onBond;
 }
 
 void BLEManager::update() {
   HCI_Process();
   bleConnectionState = _connected;
   if (_setConnectable) {
-    advertise(BLE_DEVICE_NAME, "6e400001-b5a3-f393-e0a9-e50e24dcca9e");
+    advertise();
     _setConnectable = 0;
   }
   if (HCI_Queue_Empty()) {
@@ -161,38 +156,41 @@ void BLEManager::update() {
   }
 }
 
-void BLEManager::advertise(char *advName, char *advUUID) {
-  uint8_t UUID[18];
-  if (strlen(advUUID) < 8) {
-    UUID[0] = 3;
-    UUID[1] = AD_TYPE_SERV_SOLICIT_16_BIT_UUID_LIST;
-    uuidStrToByte(advUUID, UUID + 2, 16);
-  } else {
-    UUID[0] = 17;
-    UUID[1] = AD_TYPE_SERV_SOLICIT_128_BIT_UUID_LIST;
-    uuidStrToByte(advUUID, UUID + 2, 128);
-  }
+void BLEManager::advertise() {
+  // uint8_t UUID[18];
+  // if (strlen(_advUUID) < 8) {
+  //   UUID[0] = 3;
+  //   UUID[1] = AD_TYPE_SERV_SOLICIT_16_BIT_UUID_LIST;
+  //   uuidStrToByte(_advUUID, UUID + 2, 16);
+  // } else {
+  //   UUID[0] = 17;
+  //   UUID[1] = AD_TYPE_SERV_SOLICIT_128_BIT_UUID_LIST;
+  //   uuidStrToByte(_advUUID, UUID + 2, 128);
+  // }
 
-  tBleStatus ret = hci_le_set_scan_resp_data(UUID[0] + 1, UUID);
+  // tBleStatus ret = hci_le_set_scan_resp_data(UUID[0] + 1, UUID);
+  // if (ret != BLE_STATUS_SUCCESS)
+  //   PRINTF("Set scan resp error: %d\n", (uint8_t)ret);
+
+  tBleStatus ret = hci_le_set_scan_resp_data(0, NULL);
 
   char localName[32] = {AD_TYPE_COMPLETE_LOCAL_NAME};
-  strcpy(localName + 1, BLE_DEVICE_NAME);
-  uint8_t nameLen = strlen(localName + 1) + 1;
+  strcpy(localName + 1, _deviceName);
 
   ret = aci_gap_set_discoverable(
       ADV_IND, ((uint32_t)ADV_INTERVAL_MIN_MS * 1000ul) / 625ul,
       ((uint32_t)ADV_INTERVAL_MAX_MS * 1000ul) / 625ul, STATIC_RANDOM_ADDR,
-      NO_WHITE_LIST_USE, nameLen, localName, 0, NULL,
+      NO_WHITE_LIST_USE, strlen(_deviceName) + 1, localName, 0, NULL,
       ((uint32_t)CONN_INTERVAL_MIN_MS * 1000ul) / 625ul,
       ((uint32_t)CONN_INTERVAL_MAX_MS * 1000ul) / 625ul);
 
   if (ret != BLE_STATUS_SUCCESS) {
-    PRINTF("%d\n", (uint8_t)ret);
+    PRINTF("Advertise failed with error %d\n", (uint8_t)ret);
   } else {
     PRINTF("General Discoverable Mode.\n");
   }
 
-  _phoneConnection.isAdvertising = true;
+  phoneConnection.isAdvertising = true;
 }
 
 // BLEServ *Att_Read_CB_service = NULL;
@@ -226,13 +224,9 @@ uint8_t BLEManager::addService(BLEServ *service, char *servUUID,
 uint8_t BLEManager::addCharacteristic(BLEServ *service, BLEChar *characteristic,
                                       char *charUUID, uint8_t charValLen,
                                       uint8_t charProps, uint8_t secPermission,
-                                      uint8_t gattEventMask,
-                                      uint8_t encryptionKeySize) {
+                                      uint8_t gattEventMask) {
   PRINTF("Adding characteristic..\n");
   characteristic->serviceHandle = service->handle;
-  characteristic->handle = NULL;
-  // characteristic->nextCharacteristic = NULL;
-  characteristic->onUpdate = NULL;
   if (strlen(charUUID) < 8) {
     uuidStrToByte(charUUID, characteristic->UUID, 16);
     characteristic->UUIDType = UUID_TYPE_16;
@@ -244,7 +238,7 @@ uint8_t BLEManager::addCharacteristic(BLEServ *service, BLEChar *characteristic,
   tBleStatus ret = aci_gatt_add_char(
       characteristic->serviceHandle, characteristic->UUIDType,
       characteristic->UUID, charValLen, charProps, secPermission, gattEventMask,
-      encryptionKeySize, 1, &characteristic->handle);
+      MAX_ENCRY_KEY_SIZE, 1, &characteristic->handle);
   if (ret) {
     PRINTF("Error while adding characteristic to service: %d\n", ret);
   }
@@ -256,42 +250,17 @@ uint8_t BLEManager::addCharacteristic(BLEServ *service, BLEChar *characteristic,
   return BLE_STATUS_SUCCESS;
 }
 
-uint8_t BLEManager::write(char *TXdata, uint8_t datasize) {
-  tBleStatus ret = aci_gatt_update_char_value(
-      uartService.handle, uartRxChar.handle, 0, datasize, (uint8_t *)TXdata);
+// uint8_t BLEManager::write(char *payload, uint8_t dataSize) {
+//   tBleStatus ret = aci_gatt_update_char_value(
+//       primaryService.handle, uartRxChar.handle, 0, dataSize, (uint8_t
+//       *)payload);
 
-  if (ret == BLE_STATUS_SUCCESS)
-    return ret;
+//   if (ret == BLE_STATUS_SUCCESS)
+//     return ret;
 
-  PRINTF("Error while updating UART characteristic.\n");
-  return BLE_STATUS_ERROR;
-}
-
-void BLEManager::onConnect() {
-  if (!instance)
-    return;
-
-  PRINTF("---------Connect");
-  tBleStatus ret = aci_gap_slave_security_request(
-      instance->_phoneConnection.handle, BONDING, MITM_PROTECTION_NOT_REQUIRED);
-
-  if (ret != BLE_STATUS_SUCCESS)
-    PRINTF("Slave security request error: %d\n", (uint8_t)ret);
-}
-
-void BLEManager::onDisconnect() {
-  if (instance)
-    return;
-
-  PRINTF("---------Disconnect");
-  instance->bleConnectionState = false;
-  instance->advertise(BLE_DEVICE_NAME, "6e400001-b5a3-f393-e0a9-e50e24dcca9e");
-}
-
-void BLEManager::onBond() {
-  PRINTF("---------Bonded");
-  // if (!instance) return;
-}
+//   PRINTF("Error while updating UART characteristic.\n");
+//   return BLE_STATUS_ERROR;
+// }
 
 uint8_t *BLEManager::getRxBuffer() { return _bleRxBuffer; }
 
@@ -323,14 +292,18 @@ void BLEManager::onAttributeModified(uint16_t handle, uint8_t dataLength,
   if (!instance)
     return;
   PRINTF("Attribute Modified\n");
-  if (handle != instance->uartTxChar.handle + 1)
-    return;
+  // if (handle != instance->uartTxChar.handle + 1)
+  //   return;
   int i;
   for (i = 0; i < dataLength; i++) {
     instance->_bleRxBuffer[i] = data[i];
   }
   instance->_bleRxBuffer[i] = '\0';
   instance->_bleRxBufferLen = dataLength;
+  if (data[0] != 0) {
+    PRINTF("Updated value to %u %lu\n", data[0],
+           unpackInt32((uint8_t *)&data[1]));
+  }
 }
 
 void BLEManager::onAttributeNotification(uint16_t handle, uint8_t dataLength,
@@ -371,9 +344,9 @@ void BLEManager::onPairComplete(uint8_t status) {
 
   PRINTF("Pairing complete: %02X\n", status);
 
-  instance->_phoneConnection.isBonded = true;
-  if (instance->_phoneConnection.onBond)
-    instance->_phoneConnection.onBond();
+  instance->phoneConnection.isBonded = true;
+  if (instance->phoneConnection.onBond)
+    instance->phoneConnection.onBond();
 }
 
 void BLEManager::onUnpairComplete(void) {
@@ -381,13 +354,13 @@ void BLEManager::onUnpairComplete(void) {
     return;
   PRINTF("bond lost, allowing rebond\n")
 
-  aci_gap_allow_rebond_IDB05A1(instance->_phoneConnection.handle);
+  aci_gap_allow_rebond_IDB05A1(instance->phoneConnection.handle);
 }
 
 void BLEManager::onGAPConnectionComplete(uint8_t addr[6], uint16_t handle) {
   if (!instance)
     return;
-  instance->_connected = TRUE;
+  instance->_connected = true;
   instance->_connectionHandle = handle;
 
   PRINTF("Connected to device:");
@@ -400,7 +373,7 @@ void BLEManager::onGAPConnectionComplete(uint8_t addr[6], uint16_t handle) {
 void BLEManager::onGAPDisconnectionComplete(void) {
   if (!instance)
     return;
-  instance->_connected = FALSE;
+  instance->_connected = false;
   PRINTF("Disconnected\n");
   /* Make the device connectable again. */
   instance->_setConnectable = TRUE;
@@ -413,7 +386,7 @@ void HCI_Event_CB(void *pckt) {
   if (hci_pckt->type != HCI_EVENT_PKT)
     return;
 
-  PRINTF("%d PCKT START: ", millis());
+  PRINTF("%lu PCKT START: ", millis());
 
   switch (event_pckt->evt) {
 

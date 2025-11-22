@@ -1,6 +1,7 @@
-#pragma once
+#ifndef BLEMANAGER_H
+#define BLEMANAGER_H
 
-#include <stdint.h>
+#include <cstdint>
 
 typedef struct _BLEConn {
   uint16_t handle;
@@ -33,12 +34,16 @@ typedef struct _BLEChar {
   // BLEChar *nextCharacteristic;
 } BLEChar;
 
-void uuidStrToByte(char *in, uint8_t *out, uint8_t byte_size);
+uint32_t unpackInt32(uint8_t *src);
+void packInt32(uint8_t *d, uint32_t val);
 
 class BLEManager {
 public:
-  BLEManager();
+  BLEManager(const char *deviceName, const char *advUUID,
+             void (*onConnect)(void), void (*onDisconnect)(void),
+             void (*onBond)(void));
 
+  BLEConn phoneConnection;
   bool bleConnectionState;
 
   void begin();
@@ -47,8 +52,8 @@ public:
   uint8_t getRxBufferLen();
   void resetRxBuffer();
 
-  void advertise(char *advName, char *advUUID);
-  uint8_t write(char *txData, uint8_t dataSize);
+  void advertise();
+  void (*setupServices)(void);
 
   static void setInstance(BLEManager *instance);
   static uint8_t addService(BLEServ *service, char *servUUID, uint8_t servType,
@@ -56,8 +61,7 @@ public:
   static uint8_t addCharacteristic(BLEServ *service, BLEChar *characteristic,
                                    char *charUUID, uint8_t charValLen,
                                    uint8_t charProps, uint8_t secPermission,
-                                   uint8_t gattEventMask,
-                                   uint8_t encryptionKeySize);
+                                   uint8_t gattEventMask);
 
   static void onReadRequest(uint16_t handle);
   static void onAttributeRead(uint16_t handle, uint8_t dataLen,
@@ -72,19 +76,16 @@ public:
   static void onGAPDisconnectionComplete(void);
 
 private:
-  BLEConn _phoneConnection;
+  const char *_deviceName;
   uint8_t _bleRxBuffer[21];
   uint8_t _bleRxBufferLen;
   volatile uint8_t _setConnectable;
   uint16_t _connectionHandle;
-  int _connected;
   uint32_t _lastProcedureCompleted;
-  BLEServ uartService;
-  BLEChar uartTxChar;
-  BLEChar uartRxChar;
+  const char *_advUUID;
+  bool _connected;
 
   static BLEManager *instance;
-  static void onConnect();
-  static void onDisconnect();
-  static void onBond();
 };
+
+#endif

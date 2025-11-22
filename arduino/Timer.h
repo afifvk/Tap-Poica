@@ -2,7 +2,7 @@
 #define TIMER_H
 
 #include "globals.h"
-#include <stdint.h>
+#include <cstdint>
 
 uint32_t millisOffset();
 

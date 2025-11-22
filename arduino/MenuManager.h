@@ -3,7 +3,7 @@
 
 #include "Timer.h"
 #include <RTCZero.h>
-#include <stdint.h>
+#include <cstdint>
 
 #define FONT_10_PT (FONT_INFO &)thinPixel7_10ptFontInfo
 #define FONT_22_PT (FONT_INFO &)liberationSansNarrow_22ptFontInfo
