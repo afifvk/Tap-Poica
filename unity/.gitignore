@@ -13,12 +13,7 @@ UserSettings/
 Temp/
 *.csproj
 *.sln
+*.slnx
 
 .utmp/
 *.user
-*.csproj
-*.sln
-
-.utmp/
-*.user
-.utmp/
