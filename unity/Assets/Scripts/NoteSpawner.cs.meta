@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: ea62b9a47303d1047897a20dc0c58217
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - shortNotePrefab: {fileID: 546700653779091632, guid: b53c05f6d79b3e849ab81b1d10e5d3fc, type: 3}
+  - longNotePrefab: {fileID: 4037412201650911037, guid: 2437b11b6d73af94185ac5a05c5d3071, type: 3}
+  - music: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

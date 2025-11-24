@@ -3,29 +3,51 @@ using UnityEngine;
 public class ButtonController :MonoBehaviour
 
 {
-    SpriteRenderer _spriteRenderer;
+    private SpriteRenderer theSR;
     public Sprite defaultImage;
     public Sprite pressedImage;
-    public KeyCode keyToPress;
+   //public KeyCode keyToPress;
 
     void Start()
     {
-        _spriteRenderer = GetComponent<SpriteRenderer>();
+        theSR = GetComponent<SpriteRenderer>();
 
     }
 
-    void Update()
+    void ResetSprite()
+        {
+        theSR.sprite = defaultImage;
+    /*  void Update()
+      {
+          if(Input.GetKeyDown(keyToPress))
+          {
+              theSR.sprite = pressedImage;
+          }
+
+          if(Input.GetKeyUp(keyToPress))
+          {
+              theSR.sprite = defaultImage;
+          } */  
+
+      }
+
+    public void OnTapFromController()
     {
-        if(Input.GetKeyDown(keyToPress))
-        {
-            _spriteRenderer.sprite = pressedImage;
-        }
+        theSR.sprite = pressedImage;
+        GameManager.instance.HitNote();
+        Invoke(nameof(ResetSprite), 0.12f);
+    }
 
-        if(Input.GetKeyUp(keyToPress))
-        {
-            _spriteRenderer.sprite = defaultImage;
-        }
+    public void OnHoldStartFromController()
+    {
+        theSR.sprite = pressedImage;
+        GameManager.instance.HoldStart();
+    }
 
+    public void OnHoldEndFromController()
+    {
+        ResetSprite();
+        GameManager.instance.HoldEnd();
     }
 
 }
