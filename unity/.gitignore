@@ -11,4 +11,14 @@ Logs/
 Library/
 UserSettings/
 Temp/
+*.csproj
+*.sln
+
+.utmp/
+*.user
+*.csproj
+*.sln
+
+.utmp/
+*.user
 .utmp/
