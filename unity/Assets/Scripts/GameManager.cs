@@ -50,8 +50,9 @@ public class GameManager :MonoBehaviour
     float _goodHits;
     float _perfectHits;
     float _missedHits;
+
     bool _levelLoaded;
-    // bool _startingPoint;
+
     bool _resultsShown;
     bool _isHoldingNote;
 
@@ -64,7 +65,7 @@ public class GameManager :MonoBehaviour
 
     void Awake()
     {
-        if(Instance != null)
+        if(Instance)
         {
             Destroy(gameObject);
             return;
@@ -73,12 +74,16 @@ public class GameManager :MonoBehaviour
         Instance = this;
 
         DontDestroyOnLoad(gameObject);
+        // DontDestroyOnLoad(_lightstickInput.button);
+        // DontDestroyOnLoad(resultsScreen);
+        // DontDestroyOnLoad(nextLevelButton);
     }
 
     void Start()
     {
+        Debug.Log(
+            BleConnection.Instance.controllerConnected ? "Controller connected!" : "Controller not connected.");
         // 240FPS for notes spawning
-        Debug.Log(BleConnection.Instance.controllerConnected ? "Controller connected!" : "Controller not connected.");
         Time.fixedDeltaTime = 1f / 240f;
 
         Instance = this;

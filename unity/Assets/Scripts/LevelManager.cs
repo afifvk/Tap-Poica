@@ -19,19 +19,24 @@ public class LevelManager :MonoBehaviour
 
     void Awake()
     {
-        if(!Instance)
+        if(Instance)
         {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
+            Destroy(gameObject);
             return;
         }
 
-        Destroy(gameObject);
+        Instance = this;
+        _lobbyMusic = gameObject.AddComponent<AudioSource>();
+
+
+        DontDestroyOnLoad(gameObject);
+        // DontDestroyOnLoad(levelDropdown);
+        // DontDestroyOnLoad(difficultyDropdown);
+        // DontDestroyOnLoad(startButton);
     }
 
     void Start()
     {
-        _lobbyMusic = gameObject.AddComponent<AudioSource>();
         levelDropdown.ClearOptions();
         var levelNames = LevelData.LevelRegistry
             .Select(meta => $"{meta.displayName} - {meta.artist}").ToList();
@@ -51,7 +56,6 @@ public class LevelManager :MonoBehaviour
         level = (Level)levelDropdown.value;
         StartCoroutine(LevelLoader.LoadAudioClip(level, clip =>
         {
-            Debug.Log("Playing lobby music");
             _lobbyMusic.clip = clip;
             _lobbyMusic.loop = true;
             _lobbyMusic.Play();
