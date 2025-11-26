@@ -74,6 +74,7 @@ public class LevelManager :MonoBehaviour
 
     void Update()
     {
+        if(!startButton) return;
         startButton.interactable = BleConnection.Instance.controllerConnected;
     }
 
