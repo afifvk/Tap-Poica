@@ -11,8 +11,6 @@ Logs/
 Library/
 UserSettings/
 Temp/
-Assets/StreamingAssets
-Assets/StreamingAssets.meta
 *.csproj
 *.sln
 *.slnx
