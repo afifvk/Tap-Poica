@@ -8,58 +8,10 @@ using UnityEngine.Networking;
 
 public class LevelLoader :MonoBehaviour
 {
-
-
-    static readonly List<LevelMetadata> LevelRegistry = new()
-    {
-        new LevelMetadata
-        {
-            displayName = "Iris Out",
-            artist = "Kenshi Yonezu",
-            folderName = "irisout",
-            difficulties = 3
-        },
-        new LevelMetadata
-        {
-            displayName = "Fancy",
-            artist = "TWICE",
-            folderName = "fancy",
-            difficulties = 3
-        },
-        new LevelMetadata()
-        {
-            displayName = "DDU-DU DDU-DU",
-            folderName = "ddududdudu",
-            artist = "BLACKPINK",
-            difficulties = 4
-        },
-        new LevelMetadata()
-        {
-            displayName = "How You Like That",
-            folderName = "howyoulikethat",
-            artist = "BLACKPINK",
-            difficulties = 3
-        },
-        new LevelMetadata()
-        {
-            displayName = "APT.",
-            folderName = "apt",
-            artist = "ROSÉ",
-            difficulties = 3
-        },
-        new LevelMetadata()
-        {
-            displayName = "Kill This Love",
-            folderName = "killthislove",
-            artist = "BLACKPINK",
-            difficulties = 4
-        }
-    };
-
-    public void Load(Level level, int difficultyIndex, Action<OsuBeatmap> onLoaded)
+    public void Load(Level level, LevelDifficulty difficultyIndex, Action<OsuBeatmap> onLoaded)
     {
         Debug.Log($"LevelLoader: Requested load for {level} at difficulty {difficultyIndex}");
-        var levelMetadata = LevelRegistry[(int)level];
+        var levelMetadata = LevelData.LevelRegistry[(int)level];
 
         if(levelMetadata == null)
         {
@@ -67,7 +19,7 @@ public class LevelLoader :MonoBehaviour
             return;
         }
 
-        if(difficultyIndex < 0 || difficultyIndex >= levelMetadata.difficulties)
+        if(difficultyIndex < 0 || difficultyIndex >= (LevelDifficulty)levelMetadata.difficulties)
         {
             Debug.LogError($"LevelLoader: Difficulty index {difficultyIndex} is out of range for {level}");
             return;
@@ -78,7 +30,7 @@ public class LevelLoader :MonoBehaviour
 
 // --- 3. The Internal Logic ---
 
-    IEnumerator LoadRoutine(string folderName, int difficultyIndex, Action<OsuBeatmap> callback)
+    IEnumerator LoadRoutine(string folderName, LevelDifficulty difficultyIndex, Action<OsuBeatmap> callback)
     {
         // Construct path: StreamingAssets/irisout/1.osu
         var mapPath = Path.Combine(Application.streamingAssetsPath, folderName, difficultyIndex + ".osu");
@@ -118,29 +70,4 @@ public class LevelLoader :MonoBehaviour
     }
 
 // Simple data class for your registry
-}
-
-public enum Level
-{
-    IrisOut,
-    Fancy,
-    DduDuDduDu,
-    HowYouLikeThat,
-    Apt,
-}
-
-public enum LevelDifficulty
-{
-    Easy,
-    Medium,
-    Hard,
-    Expert
-}
-
-internal class LevelMetadata
-{
-    public string displayName;
-    public string artist;
-    public string folderName; // e.g. "irisout"
-    public int difficulties;
 }

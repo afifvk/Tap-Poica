@@ -5,16 +5,14 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class GameManager : MonoBehaviour
+public class GameManager :MonoBehaviour
 {
     public static GameManager Instance;
 
     [Header("Level Settings")]
-    public Level level = Level.IrisOut;
-    public int difficulty = 1;
+    public LevelData levelData;
 
-    [Header("Note Settings")]
-    public GameObject shortNotePrefab;
+    [Header("Note Settings")] public GameObject shortNotePrefab;
     public GameObject longNotePrefab;
     public float offsetMs = 100f; // offset to sync with music
     public float noteStart = 9f;
@@ -57,6 +55,19 @@ public class GameManager : MonoBehaviour
     LevelLoader _levelLoader;
     AudioSource _music;
 
+    void Awake()
+    {
+        if(Instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
+        DontDestroyOnLoad(gameObject);
+    }
+
     void Start()
     {
         // 240FPS for notes spawning
@@ -64,7 +75,7 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
         _levelLoader = gameObject.AddComponent<LevelLoader>();
-        _levelLoader.Load(level, difficulty, OnLevelReady);
+        _levelLoader.Load(levelData.level, levelData.difficulty, OnLevelReady);
         _noteSpawner = gameObject.AddComponent<NoteSpawner>();
         _music = gameObject.AddComponent<AudioSource>();
 
@@ -79,13 +90,13 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        if (!_levelLoaded) return;
+        if(!_levelLoaded) return;
 
-        if (_startingPoint || Input.anyKeyDown) return;
+        if(_startingPoint || Input.anyKeyDown) return;
         _startingPoint = true;
         // beatScroller.hasStarted = true;
 
-        if (_resultsShown || _music.isPlaying) return;
+        if(_resultsShown || _music.isPlaying) return;
         ShowResults();
         _resultsShown = true;
     }
@@ -144,12 +155,12 @@ public class GameManager : MonoBehaviour
         foreach (var n in notes)
         {
             var d = Mathf.Abs(n.transform.position.y);
-            if (!n.canBePressed && d >= bestDist) continue;
+            if(!n.canBePressed && d >= bestDist) continue;
             bestDist = d;
             closest = n;
         }
 
-        if (!closest) return;
+        if(!closest) return;
         closest.Pressed();
     }
 
@@ -157,7 +168,7 @@ public class GameManager : MonoBehaviour
     {
         foreach (var n in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
-            if (!n.canBePressed || n.noteType != NoteType.Long) continue;
+            if(!n.canBePressed || n.noteType != NoteType.Long) continue;
             n.HoldStart();
             return;
         }
@@ -167,7 +178,7 @@ public class GameManager : MonoBehaviour
     {
         foreach (var n in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
-            if (!n.isBeingHeld) continue;
+            if(!n.isBeingHeld) continue;
             n.HoldEnd();
             return;
         }
@@ -176,11 +187,11 @@ public class GameManager : MonoBehaviour
     // --- Scoring System ---
     public void NoteHit()
     {
-        if (currentMultiplier - 1 < multiplierThresholds.Length)
+        if(currentMultiplier - 1 < multiplierThresholds.Length)
         {
             multiplierTracker++;
 
-            if (multiplierThresholds[currentMultiplier - 1] <= multiplierTracker)
+            if(multiplierThresholds[currentMultiplier - 1] <= multiplierTracker)
             {
                 multiplierTracker = 0;
                 currentMultiplier++;
