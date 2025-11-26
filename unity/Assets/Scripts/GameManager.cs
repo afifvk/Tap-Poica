@@ -286,6 +286,8 @@ public class GameManager :MonoBehaviour
 
     public void ExitToStart()
     {
-        SceneManager.SetActiveScene(SceneManager.GetSceneByName("StartScene"));
+        _music.Stop();
+        SceneManager.LoadScene("Scenes/StartScene");
+        // SceneManager.SetActiveScene(SceneManager.GetSceneByName("StartScene"));
     }
 }
