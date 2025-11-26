@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class LevelManager :MonoBehaviour
+public class LevelManager : MonoBehaviour
 {
     public static LevelManager Instance;
     public TMP_Dropdown levelDropdown;
@@ -30,6 +30,6 @@ public class LevelManager :MonoBehaviour
     public void StartLevel()
     {
         SceneManager.LoadScene("MainScene");
-        SceneManager.SetActiveScene(SceneManager.GetSceneByName("MainScene"));
+        // SceneManager.SetActiveScene(SceneManager.GetSceneByName("MainScene"));
     }
 }

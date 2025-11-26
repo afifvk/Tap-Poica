@@ -208,6 +208,7 @@ public class BleConnection :MonoBehaviour
             Subscribe();
             deviceScanStatusText.text = "connected";
             SceneManager.LoadScene("StartScene");
+            // SceneManager.SetActiveScene(SceneManager.GetSceneByName("StartScene"));
             break;
         }
     }

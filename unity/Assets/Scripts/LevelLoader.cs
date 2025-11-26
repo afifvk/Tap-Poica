@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -6,20 +6,20 @@ using OsuParser;
 using UnityEngine;
 using UnityEngine.Networking;
 
-public class LevelLoader :MonoBehaviour
+public class LevelLoader : MonoBehaviour
 {
     public void Load(Level level, LevelDifficulty difficultyIndex, Action<OsuBeatmap> onLoaded)
     {
         Debug.Log($"LevelLoader: Requested load for {level} at difficulty {difficultyIndex}");
         var levelMetadata = LevelData.LevelRegistry[(int)level];
 
-        if(levelMetadata == null)
+        if (levelMetadata == null)
         {
             Debug.LogError($"LevelLoader: Could not find level named '{level}'");
             return;
         }
 
-        if(difficultyIndex < 0 || difficultyIndex >= (LevelDifficulty)levelMetadata.difficulties)
+        if (difficultyIndex < 0 || difficultyIndex >= (LevelDifficulty)levelMetadata.difficulties)
         {
             Debug.LogError($"LevelLoader: Difficulty index {difficultyIndex} is out of range for {level}");
             return;
@@ -28,23 +28,23 @@ public class LevelLoader :MonoBehaviour
         StartCoroutine(LoadRoutine(levelMetadata.folderName, difficultyIndex, onLoaded));
     }
 
-// --- 3. The Internal Logic ---
+    // --- 3. The Internal Logic ---
 
     IEnumerator LoadRoutine(string folderName, LevelDifficulty difficultyIndex, Action<OsuBeatmap> callback)
     {
         // Construct path: StreamingAssets/irisout/1.osu
-        var mapPath = Path.Combine(Application.streamingAssetsPath, folderName, difficultyIndex + ".osu");
+        var mapPath = Path.Combine(Application.streamingAssetsPath, folderName, (int)difficultyIndex + ".osu");
 
         OsuBeatmap loadedOsuBeatmap;
 
-        if(!mapPath.Contains("://"))
+        if (!mapPath.Contains("://"))
             mapPath = "file://" + mapPath;
 
         using (var www = UnityWebRequest.Get(mapPath))
         {
             yield return www.SendWebRequest();
 
-            if(www.result != UnityWebRequest.Result.Success)
+            if (www.result != UnityWebRequest.Result.Success)
                 Debug.LogError($"LevelLoader Error: {www.error}");
 
             Debug.Log("LevelLoader: File read. Parsing...");
@@ -69,5 +69,5 @@ public class LevelLoader :MonoBehaviour
         callback?.Invoke(loadedOsuBeatmap);
     }
 
-// Simple data class for your registry
+    // Simple data class for your registry
 }

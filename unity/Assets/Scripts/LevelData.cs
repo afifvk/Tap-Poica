@@ -2,7 +2,7 @@
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "LevelData", menuName = "LevelData", order = 1)]
-public class LevelData :ScriptableObject
+public class LevelData : ScriptableObject
 {
     public Level level;
     public LevelDifficulty difficulty;
@@ -65,7 +65,7 @@ public enum Level
 
 public enum LevelDifficulty
 {
-    Easy,
+    Easy = 0,
     Medium,
     Hard,
     Expert
