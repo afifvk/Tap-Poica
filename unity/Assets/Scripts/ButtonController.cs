@@ -14,21 +14,22 @@ public class ButtonController :MonoBehaviour
 
     }
 
+    /*  void Update()
+    {
+        if(Input.GetKeyDown(keyToPress))
+        {
+            theSR.sprite = pressedImage;
+        }
+
+        if(Input.GetKeyUp(keyToPress))
+        {
+            theSR.sprite = defaultImage;
+        }
+    } */
+
     void ResetSprite()
     {
         _spriteRenderer.sprite = defaultImage;
-        /*  void Update()
-          {
-              if(Input.GetKeyDown(keyToPress))
-              {
-                  theSR.sprite = pressedImage;
-              }
-
-              if(Input.GetKeyUp(keyToPress))
-              {
-                  theSR.sprite = defaultImage;
-              } */
-
     }
 
     public void OnTapFromController()
