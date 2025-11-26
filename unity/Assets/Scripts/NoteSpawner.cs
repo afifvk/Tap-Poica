@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using OsuParser;
@@ -81,7 +80,7 @@ public class NoteSpawner : MonoBehaviour
             return;
         }
 
-        var musicTimeMs = _audioSource.time * 1000;
+        // var musicTimeMs = _audioSource.time * 1000;
         noteObject.Initialize(data, noteStart / leadTimeMs * 1000f);
 
         _nextIndex++;
