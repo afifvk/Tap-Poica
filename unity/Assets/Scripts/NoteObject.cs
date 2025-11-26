@@ -29,7 +29,7 @@ public class NoteObject : MonoBehaviour
 
         var visualHeight = speed * (float)_duration / 1000f;
         transform.Translate(Vector3.up * visualHeight);
-        line.transform.localScale = Vector3.one * visualHeight;
+        line.transform.localScale = new Vector3(line.transform.localScale.x, visualHeight, line.transform.localScale.z);
         tailCollider.transform.localPosition = Vector3.up * visualHeight / 2f;
         headCollider.transform.localPosition = Vector3.down * visualHeight / 2f;
     }
