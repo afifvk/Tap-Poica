@@ -1,37 +1,37 @@
 using System;
 using UnityEngine;
 
-public class LightstickInput :MonoBehaviour
+public class LightstickInput
 {
     public ButtonController button; // drag your button here
     LightStickData _lightStickData;
-    double _packetDelay;
+    int _packetDelay;
 
     [Flags]
-    enum LightStickData
+    public enum LightStickData
     {
         Tap = 1 << 0,
         ShakeStart = 1 << 1,
         ShakeEnd = 1 << 2
     }
 
-    void Update()
+    public void Update()
     {
-        if(_lightStickData.HasFlag(LightStickData.Tap))
+        if (_lightStickData.HasFlag(LightStickData.Tap))
         {
             Debug.Log("TAP");
             button.OnTapFromController();
             _lightStickData &= ~LightStickData.Tap; // Clear the flag after processing
         }
 
-        if(_lightStickData.HasFlag(LightStickData.ShakeStart))
+        if (_lightStickData.HasFlag(LightStickData.ShakeStart))
         {
             Debug.Log("HOLD START");
             button.OnHoldStartFromController();
             _lightStickData &= ~LightStickData.ShakeStart; // Clear the flag after processing
         }
 
-        if(_lightStickData.HasFlag(LightStickData.ShakeEnd))
+        if (_lightStickData.HasFlag(LightStickData.ShakeEnd))
         {
             Debug.Log("HOLD END");
             button.OnHoldEndFromController();
@@ -39,15 +39,15 @@ public class LightstickInput :MonoBehaviour
         }
     }
 
-    void UpdateFromPacket(LightStickPacket data)
+    public void UpdateFromPacket(LightStickPacket data)
     {
         _lightStickData = (LightStickData)data.data;
         _packetDelay = data.delay;
     }
 }
 
-struct LightStickPacket
+public struct LightStickPacket
 {
-    public double delay; // delay in ms
+    public int delay; // delay in ms
     public byte data; // lightstick data (tap/shake)
 }

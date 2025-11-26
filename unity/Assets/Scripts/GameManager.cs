@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using OsuParser;
 using TMPro;
@@ -50,12 +52,25 @@ public class GameManager : MonoBehaviour
     bool _levelLoaded;
     bool _startingPoint;
     bool _resultsShown;
+    bool _isHoldingNote = false;
 
     NoteSpawner _noteSpawner;
     LevelLoader _levelLoader;
     AudioSource _music;
 
-    bool _isHolding = false;
+    // Bluetooth stuff
+    string _deviceId;
+    readonly Dictionary<string, Dictionary<string, string>> _devices = new();
+    const string DeviceName = "TapPioca";
+    const string ServiceId = "{67676701-6767-6767-6767-676767676767}";
+    const string WriteCharacteristicId = "{67676702-6767-6767-6767-676767676767}";
+    const string ListenCharacteristicId = "{67676703-6767-6767-6767-676767676767}";
+    bool _controllerConnected = false;
+    bool _isScanningDevices = false;
+    bool _isScanningServices = false;
+    bool _isScanningCharacteristics = false;
+    string _lastBleError = "Ok";
+    LightstickInput _lightstickInput = new();
 
     void Awake()
     {
@@ -77,7 +92,6 @@ public class GameManager : MonoBehaviour
 
         Instance = this;
         _levelLoader = gameObject.AddComponent<LevelLoader>();
-        _levelLoader.Load(levelData.level, levelData.difficulty, OnLevelReady);
         _noteSpawner = gameObject.AddComponent<NoteSpawner>();
         _music = gameObject.AddComponent<AudioSource>();
 
@@ -86,20 +100,31 @@ public class GameManager : MonoBehaviour
 
         _totalNotes = FindObjectsByType<NoteObject>(FindObjectsSortMode.None).Length;
 
-        _isHolding = false;
+        _isHoldingNote = false;
         resultsScreen.SetActive(false);
         // nextLevelButton.gameObject.SetActive(false);
     }
 
     void Update()
     {
+        if (!_controllerConnected)
+        {
+            ConnectController();
+            return;
+        }
+
         if (!_levelLoaded) return;
+
+        if (_controllerConnected)
+        {
+            pollController();
+        }
 
         if (_startingPoint || Input.anyKeyDown) return;
         _startingPoint = true;
         // beatScroller.hasStarted = true;
 
-        if (_isHolding)
+        if (_isHoldingNote)
         {
             HoldStart();
         }
@@ -111,6 +136,198 @@ public class GameManager : MonoBehaviour
         if (_resultsShown || _music.isPlaying) return;
         ShowResults();
         _resultsShown = true;
+    }
+
+    void ConnectController()
+    {
+        if (!_isScanningDevices)
+        {
+            StartStopDeviceScan();
+        }
+
+        if (_isScanningDevices)
+        {
+            ScanDevices();
+        }
+
+        if (_isScanningServices)
+        {
+            ScanServices();
+        }
+
+        if (_isScanningCharacteristics)
+        {
+            ScanCharacteristics();
+        }
+
+        {
+            // log potential errors
+            BleApi.GetError(out var res);
+            if (_lastBleError == res.msg) return;
+            Debug.LogError("BleApi error: " + res.msg);
+            _lastBleError = res.msg;
+        }
+    }
+
+    void OnApplicationQuit()
+    {
+        BleApi.Quit();
+    }
+
+    void StartStopDeviceScan()
+    {
+        if (!_isScanningDevices)
+        {
+            // start new scan
+            _devices.Clear();
+            BleApi.StartDeviceScan();
+            _isScanningDevices = true;
+            Debug.Log("Scanning for devices...");
+        }
+        else
+        {
+            // stop scan
+            _isScanningDevices = false;
+            BleApi.StopDeviceScan();
+            Debug.Log("Stopped scanning for devices.");
+        }
+    }
+
+    void ScanDevices()
+    {
+        var res = new BleApi.DeviceUpdate();
+
+        while (true)
+        {
+            // Non-blocking poll
+            var status = BleApi.PollDevice(ref res, false);
+
+            if (status == BleApi.ScanStatus.Finished)
+            {
+                _isScanningDevices = false;
+                Debug.Log("Failed to find device.");
+                StartStopDeviceScan();
+            }
+
+            if (status != BleApi.ScanStatus.Available)
+            {
+                break;
+            }
+
+            if (!_devices.ContainsKey(res.id))
+                _devices[res.id] = new Dictionary<string, string>()
+                {
+                    { "name", "" },
+                    { "isConnectable", "False" }
+                };
+            if (res.nameUpdated)
+                _devices[res.id]["name"] = res.name;
+            if (res.isConnectableUpdated)
+                _devices[res.id]["isConnectable"] = res.isConnectable.ToString();
+
+            // Consider only devices which have the right name and which are connectable
+            if (_devices[res.id]["name"] != DeviceName || _devices[res.id]["isConnectable"] != "True") continue;
+            // This is our device
+            StartStopDeviceScan();
+            Debug.Log("Connecting to controller...");
+            _deviceId = res.id;
+            StartServiceScan();
+            return;
+        }
+    }
+
+    void StartServiceScan()
+    {
+        if (_isScanningServices) return;
+        // start new scan
+        BleApi.ScanServices(_deviceId);
+        _isScanningServices = true;
+    }
+
+    void ScanServices()
+    {
+        while (true)
+        {
+            var status = BleApi.PollService(out var res, false);
+
+            if (status == BleApi.ScanStatus.Finished)
+            {
+                _isScanningServices = false;
+                Debug.Log("Failed to find service.");
+                _isScanningDevices = false;
+                StartStopDeviceScan();
+            }
+
+            if (status != BleApi.ScanStatus.Available)
+            {
+                break;
+            }
+
+            if (res.uuid != ServiceId) continue;
+            // Found our service
+            _isScanningServices = false;
+            StartCharacteristicScan();
+            break;
+        }
+    }
+
+    void StartCharacteristicScan()
+    {
+        if (_isScanningCharacteristics) return;
+        BleApi.ScanCharacteristics(_deviceId, ServiceId);
+        _isScanningCharacteristics = true;
+    }
+
+    void ScanCharacteristics()
+    {
+        while (true)
+        {
+            var status = BleApi.PollCharacteristic(out var res, false);
+
+            if (status == BleApi.ScanStatus.Finished)
+            {
+                _isScanningCharacteristics = false;
+                Debug.Log("Failed to find characteristic.");
+                _isScanningDevices = false;
+                StartStopDeviceScan();
+            }
+
+            if (status != BleApi.ScanStatus.Available)
+            {
+                break;
+            }
+
+            if (res.uuid != ListenCharacteristicId) continue;
+            // Found our characteristic, we are done
+            _isScanningCharacteristics = false;
+            Subscribe();
+            Debug.Log("Controller connected!");
+            _levelLoader.Load(levelData.level, levelData.difficulty, OnLevelReady);
+            break;
+        }
+    }
+
+    void Subscribe()
+    {
+        // no error code available in non-blocking mode
+        BleApi.SubscribeCharacteristic(_deviceId, ServiceId, ListenCharacteristicId, false);
+        _controllerConnected = true;
+    }
+
+
+    void pollController()
+    {
+        while (BleApi.PollData(out var res, false))
+        {
+            Debug.Log("Polling controller...");
+            LightStickPacket packet;
+            packet.delay = BitConverter.ToInt32(res.buf, 0);
+            packet.data = res.buf[4];
+            Debug.Log("Delay: " + packet.delay + "us");
+
+            _lightstickInput.UpdateFromPacket(packet);
+            _lightstickInput.Update();
+        }
     }
 
     void OnLevelReady(OsuBeatmap osuBeatmap)
@@ -130,7 +347,7 @@ public class GameManager : MonoBehaviour
 
     void ShowResults()
     {
-        _isHolding = false;
+        _isHoldingNote = false;
 
         resultsScreen.SetActive(true);
         _resultsShown = true;
@@ -179,7 +396,7 @@ public class GameManager : MonoBehaviour
 
     public void HoldStart()
     {
-        _isHolding = true;
+        _isHoldingNote = true;
         foreach (var n in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
             // Start all holds that can be started
@@ -192,7 +409,7 @@ public class GameManager : MonoBehaviour
 
     public void HoldEnd()
     {
-        _isHolding = false;
+        _isHoldingNote = false;
         foreach (var n in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
             // End all held notes
