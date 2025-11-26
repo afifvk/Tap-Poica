@@ -61,6 +61,8 @@ public class GameManager :MonoBehaviour
         Instance = this;
         _levelLoader = gameObject.AddComponent<LevelLoader>();
         _levelLoader.Load(level, difficulty, OnLevelReady);
+        _noteSpawner = gameObject.AddComponent<NoteSpawner>();
+        _music = gameObject.AddComponent<AudioSource>();
 
         scoreTxt.text = "Score: 0";
         currentMultiplier = 1;
@@ -87,12 +89,10 @@ public class GameManager :MonoBehaviour
     void OnLevelReady(OsuBeatmap osuBeatmap)
     {
         _levelLoaded = true;
-        _music = gameObject.AddComponent<AudioSource>();
         _music.clip = osuBeatmap.audioClip;
         _music.Play();
         _music.loop = false;
-        _noteSpawner = gameObject.AddComponent<NoteSpawner>();
-        _noteSpawner.transform.position = new Vector3(0, 9, 0);
+        _noteSpawner.transform.Translate(Vector3.up * 9f);
         _noteSpawner.longNotePrefab = longNotePrefab;
         _noteSpawner.shortNotePrefab = shortNotePrefab;
         _noteSpawner.leadTimeMs = leadTimeMs;

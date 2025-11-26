@@ -5,6 +5,14 @@ using UnityEngine;
 
 namespace OsuParser
 {
+    public sealed class OsuBeatmap
+    {
+        public float sliderMultiplier = 1.4f;
+        public double globalBpm;
+        public AudioClip audioClip;
+        public readonly List<HitObject> hitObjects = new();
+    }
+
     public static class FileParser
     {
         public static OsuBeatmap Parse(string fileContent)
@@ -29,9 +37,14 @@ namespace OsuParser
 
                 switch (currentSection)
                 {
+                    case "[Difficulty]":
+                    {
+                        if(!trimmed.StartsWith("SliderMultiplier:")) break;
+                        data.sliderMultiplier = float.Parse(trimmed.Split(':')[1], CultureInfo.InvariantCulture);
+                        break;
+                    }
                     case "[TimingPoints]":
                     {
-                        // we only want to set the global BPM once (from the first valid line)
                         if(data.globalBpm != 0) break;
                         ParseBpm(trimmed, data);
                         break;
@@ -79,7 +92,6 @@ namespace OsuParser
         {
             var parts = line.Split(',');
 
-            // Parse the common stuff first
             var x = int.Parse(parts[0]);
             var y = int.Parse(parts[1]);
             var time = int.Parse(parts[2]);
