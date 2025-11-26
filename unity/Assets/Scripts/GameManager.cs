@@ -86,6 +86,7 @@ public class GameManager : MonoBehaviour
 
         _totalNotes = FindObjectsByType<NoteObject>(FindObjectsSortMode.None).Length;
 
+        _isHolding = false;
         resultsScreen.SetActive(false);
         // nextLevelButton.gameObject.SetActive(false);
     }
@@ -97,6 +98,15 @@ public class GameManager : MonoBehaviour
         if (_startingPoint || Input.anyKeyDown) return;
         _startingPoint = true;
         // beatScroller.hasStarted = true;
+
+        if (_isHolding)
+        {
+            HoldStart();
+        }
+        else
+        {
+            HoldEnd();
+        }
 
         if (_resultsShown || _music.isPlaying) return;
         ShowResults();
@@ -120,6 +130,8 @@ public class GameManager : MonoBehaviour
 
     void ShowResults()
     {
+        _isHolding = false;
+
         resultsScreen.SetActive(true);
         _resultsShown = true;
 
@@ -150,6 +162,7 @@ public class GameManager : MonoBehaviour
     // --- Hit & Hold Notes Programmatically ---
     public void HitNote()
     {
+        // Only hit latest note that can be pressed
         NoteObject latest = null;
         foreach (var n in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
@@ -167,22 +180,13 @@ public class GameManager : MonoBehaviour
     public void HoldStart()
     {
         _isHolding = true;
-
-        NoteObject latest = null;
         foreach (var n in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
-            // Start the latest hold note that can be pressed
-            if (!n.CanBePressed() || n.noteType != NoteType.Long) continue;
-            if (latest == null || n._lifetimeMs < latest._lifetimeMs)
-            {
-                latest = n;
-            }
-        }
-
-        if (!latest) return;
-        if (!latest.isBeingHeld)
-        {
-            latest.HoldStart();
+            // Start all holds that can be started
+            if (n._lifetimeMs > 0
+                || n.noteType != NoteType.Long
+                || n.isBeingHeld) continue;
+            n.HoldStart();
         }
     }
 
@@ -192,7 +196,9 @@ public class GameManager : MonoBehaviour
         foreach (var n in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
             // End all held notes
-            if (!n.isBeingHeld || n.noteType != NoteType.Long) continue;
+            if (n._lifetimeMs > 0
+                || !n.isBeingHeld
+                || n.noteType != NoteType.Long) continue;
             n.HoldEnd();
         }
     }
