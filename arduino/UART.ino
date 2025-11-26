@@ -5,7 +5,7 @@
 
 #if BLE_DEBUG
 #include <stdio.h>
-char sprintbuff[100];
+extern char sprintbuff[100];
 #define PRINTF(...) {sprintf(sprintbuff,__VA_ARGS__);SerialMonitorInterface.print(sprintbuff);}
 #else
 #define PRINTF(...)
@@ -53,7 +53,7 @@ int BLEsetup() {
     PRINTF("GAP_Init failed.\n");
   }
 
-  const char *name = "BlueNRG";
+  const char *name = "TapPioca";
 
   ret = aci_gatt_update_char_value(service_handle, dev_name_char_handle, 0, strlen(name), (uint8_t *)name);
 
@@ -116,12 +116,12 @@ uint8_t Add_UART_Service(void)
   if (ret != BLE_STATUS_SUCCESS) goto fail;
 
   COPY_UART_TX_CHAR_UUID(uuid);
-  ret =  aci_gatt_add_char(UARTServHandle, UUID_TYPE_128, uuid, 20, CHAR_PROP_WRITE_WITHOUT_RESP, ATTR_PERMISSION_NONE, GATT_NOTIFY_ATTRIBUTE_WRITE,
+  ret =  aci_gatt_add_char(UARTServHandle, UUID_TYPE_128, uuid, 5, CHAR_PROP_WRITE_WITHOUT_RESP, ATTR_PERMISSION_NONE, GATT_NOTIFY_ATTRIBUTE_WRITE,
                            16, 1, &UARTTXCharHandle);
   if (ret != BLE_STATUS_SUCCESS) goto fail;
 
   COPY_UART_RX_CHAR_UUID(uuid);
-  ret =  aci_gatt_add_char(UARTServHandle, UUID_TYPE_128, uuid, 20, CHAR_PROP_NOTIFY, ATTR_PERMISSION_NONE, 0,
+  ret =  aci_gatt_add_char(UARTServHandle, UUID_TYPE_128, uuid, 5, CHAR_PROP_NOTIFY, ATTR_PERMISSION_NONE, 0,
                            16, 1, &UARTRXCharHandle);
   if (ret != BLE_STATUS_SUCCESS) goto fail;
 
@@ -175,7 +175,7 @@ void setConnectable(void)
 {
   tBleStatus ret;
 
-  const char local_name[] = {AD_TYPE_COMPLETE_LOCAL_NAME, 'B', 'l', 'u', 'e', 'N', 'R', 'G'};
+  const char local_name[] = {AD_TYPE_COMPLETE_LOCAL_NAME, 'T', 'a', 'p', 'P', 'i', 'o', 'c', 'a'};
 
   hci_le_set_scan_resp_data(0, NULL);
   PRINTF("General Discoverable Mode.\n");

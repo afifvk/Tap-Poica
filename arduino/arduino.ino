@@ -1,18 +1,31 @@
 #include "BMA250.h"
+#include "SampleBuffer.h"
 #include <RTCZero.h>
+#include <SPI.h>
 #include <STBLE.h>
+#include <TinyScreen.h>
 #include <Wire.h>
 #include <time.h>
 
-#include "UART.cpp"
-#include "display.cpp"
-#include "menu.cpp"
-
 #define SerialMonitorInterface SerialUSB
+#if BLE_DEBUG
+#include <stdio.h>
+extern char sprintbuff[100];
+#define PRINTF(...) \
+  { \
+    sprintf(sprintbuff, __VA_ARGS__); \
+    SerialMonitorInterface.print(sprintbuff); \
+  }
+#else
+#define PRINTF(...)
+#endif
+
+#define BLE_DEVICE_NAME "TapPioca"
+
 #define TAP_THRESH 5600.0
-#define TAP_DEBOUNCE 60000 // microseconds
+#define TAP_DEBOUNCE 60000  // microseconds
 #define SHAKE_THRESH 510.0
-#define SHAKE_DEBOUNCE 130000 // microseconds
+#define SHAKE_DEBOUNCE 130000  // microseconds
 
 #define VIBRATE_PIN 6
 #define VIBRATE_PIN_ACTIVE HIGH
@@ -25,6 +38,9 @@
 
 #define BLE_DEBUG true
 #define menu_debug_print true
+
+char sprintbuff[100];
+
 uint32_t doVibrate = 0;
 
 uint8_t ble_rx_buffer[21];
@@ -34,6 +50,7 @@ uint8_t ble_connection_state = false;
 uint8_t ble_connection_displayed_state = true;
 
 TinyScreen display = TinyScreen(TinyScreenDefault);
+RTCZero RTCZ;
 SampleBuffer samples;
 BMA250 accel_sensor;
 uint32_t clock_micros;
@@ -45,24 +62,6 @@ uint32_t startTime = 0;
 uint32_t sleepTime = 0;
 unsigned long millisOffsetCount = 0;
 
-void wakeHandler() {
-  if (sleepTime) {
-    millisOffsetCount += (RTCZ.getEpoch() - sleepTime);
-    sleepTime = 0;
-  }
-}
-
-void RTCwakeHandler() {
-  // not used
-}
-
-void watchSleep() {
-  if (doVibrate || ble_can_sleep)
-    return;
-  sleepTime = RTCZ.getEpoch();
-  RTCZ.standbyMode();
-}
-
 uint8_t defaultFontColor = TS_8b_White;
 uint8_t defaultFontBG = TS_8b_Black;
 uint8_t inactiveFontColor = TS_8b_Gray;
@@ -70,7 +69,7 @@ uint8_t inactiveFontBG = TS_8b_Black;
 
 uint8_t topBarHeight = 10;
 uint8_t timeY = 14;
-uint8_t menuTextY[4] = {12, 25, 38, 51};
+uint8_t menuTextY[4] = { 12, 25, 38, 51 };
 
 unsigned long lastReceivedTime = 0;
 
@@ -81,6 +80,8 @@ unsigned long sleepTimer = 0;
 int sleepTimeout = 5;
 
 uint8_t rewriteTime = true;
+
+uint32_t clockDelay = -1;
 
 uint8_t displayOn = 0;
 uint8_t buttonReleased = 1;
@@ -102,10 +103,32 @@ uint8_t lastSetBrightness = 100;
 const FONT_INFO &font10pt = thinPixel7_10ptFontInfo;
 const FONT_INFO &font22pt = liberationSansNarrow_22ptFontInfo;
 
+uint32_t millisOffset() {
+  return (millisOffsetCount * 1000ul) + millis();
+}
+
+void wakeHandler() {
+  if (sleepTime) {
+    millisOffsetCount += (RTCZ.getEpoch() - sleepTime);
+    sleepTime = 0;
+  }
+}
+
+void RTCwakeHandler() {
+  // not used
+}
+
+void watchSleep() {
+  if (doVibrate || ble_can_sleep)
+    return;
+  sleepTime = RTCZ.getEpoch();
+  RTCZ.standbyMode();
+}
+
 void setup() {
   RTCZ.begin();
-  RTCZ.setTime(16, 15, 1); // h,m,s
-  RTCZ.setDate(25, 7, 16); // d,m,y
+  RTCZ.setTime(16, 15, 1);  // h,m,s
+  RTCZ.setDate(25, 7, 16);  // d,m,y
   Wire.begin();
   SerialMonitorInterface.begin(115200);
   display.begin();
@@ -121,42 +144,82 @@ void setup() {
   if (accel_sensor.begin(BMA250_range_2g, BMA250_update_time_4ms)) {
     PRINTF("ERROR! NO BMA250 DETECTED!");
   }
-
-  clock_micros = micros();
-  // currentMicros = micros();
 }
 
-void loop() {
-  // uint32_t elapsed = micros() - clock_micros;
-  // lastDetectTime += elapsed;
-  clock_micros = micros();
 
-  // if (SAMPLE_MICROS < lastDetectTime) {
+void loop() {
   Sample sample = accel_sensor.read();
   samples.append(sample);
-  // PRINTF("last detect: %lu\n", lastDetectTime);
   if (clock_micros - last_tap > TAP_DEBOUNCE) {
     packetFlags |= detectTap();
   }
   packetFlags |= detectShake();
-  uint8_t lastDetect = micros();
 
-  uint8_t packet[5];
-
-  packInt32(packet, clock_micros);
-  packet[4] = packetFlags;
   if (packetFlags) {
-    PRINTF("write took: %lu\n", micros() - lastDetect - clock_micros);
-    bleWrite((char *)packet, 5);
+    uint8_t packet[5];
+    packInt32(packet, clockDelay);
+    packet[4] = packetFlags;
+    // PRINTF("%d\n", microsOffset());
+    PRINTF("write took: %lu\n", delay);
+    lib_aci_send_data(0, packet, 5);
     packetFlags = 0;
   }
 
-  // lastDetectTime = 0;
-  // }
+  aci_loop();  // Process any ACI commands or events from the NRF8001- main BLE
+               // handler, must run often. Keep main loop short.
+  if (ble_rx_buffer_len) {
+    if (ble_rx_buffer[0] == 'D') {
+      // expect date/time string- example: D2015 03 05 11 48 42
+      lastReceivedTime = millisOffset();
+      updateTime(ble_rx_buffer + 1);
+      requestScreenOn();
+    }
+    if (ble_rx_buffer[0] == '1') {
+      memcpy(notificationLine1, ble_rx_buffer + 1, ble_rx_buffer_len - 1);
+      notificationLine1[ble_rx_buffer_len - 1] = '\0';
+      amtNotifications = 1;
+      requestScreenOn();
+    }
+    if (ble_rx_buffer[0] == '2') {
+      memcpy(notificationLine2, ble_rx_buffer + 1, ble_rx_buffer_len - 1);
+      notificationLine2[ble_rx_buffer_len - 1] = '\0';
+      amtNotifications = 1;
+      requestScreenOn();
+      rewriteMenu = true;
+      updateMainDisplay();
+      doVibrate = millisOffset();
+    }
+    ble_rx_buffer_len = 0;
+  }
 
-  bleManager.update();
-  displayManager.update();
+  if (doVibrate) {
+    uint32_t td = millisOffset() - doVibrate;
+    if (td > 0 && td < 100) {
+      digitalWrite(vibratePin, vibratePinActive);
+    } else if (td > 200 && td < 300) {
+      digitalWrite(vibratePin, vibratePinActive);
+    } else {
+      digitalWrite(vibratePin, vibratePinInactive);
+      if (td > 300)
+        doVibrate = 0;
+    }
+  }
+  if (displayOn && (millisOffset() > mainDisplayUpdateInterval + lastMainDisplayUpdate)) {
+    updateMainDisplay();
+  }
+  if (millisOffset() > sleepTimer + ((unsigned long)sleepTimeout * 1000ul)) {
+    if (displayOn) {
+      displayOn = 0;
+      display.off();
+    }
+#if defined(ARDUINO_ARCH_SAMD)
+    // watchSleep();
+#endif
+  }
+  checkButtons();
 
+  
+  clockDelay = micros() - clock_micros;
   waitForNextSample();
 }
 
@@ -190,6 +253,43 @@ uint8_t detectShake() {
     return FLAG_SHAKE_START;
   }
   return FLAG_IDLE;
+}
+
+void updateTime(uint8_t * b) {
+  int y, M, d, k, m, s;
+  char * next;
+  y = strtol((char *)b, &next, 10);
+  M = strtol(next, &next, 10);
+  d = strtol(next, &next, 10);
+  k = strtol(next, &next, 10);
+  m = strtol(next, &next, 10);
+  s = strtol(next, &next, 10);
+  RTCZ.setTime(k, m, s);
+  RTCZ.setDate(d, M, y - 2000);
+}
+
+int requestScreenOn() {
+  sleepTimer = millisOffset();
+  if (!displayOn) {
+    displayOn = 1;
+    updateMainDisplay();
+    display.on();
+    return 1;
+  }
+  return 0;
+}
+
+void checkButtons() {
+  byte buttons = display.getButtons();
+  if (buttonReleased && buttons) {
+    if (displayOn)
+      buttonPress(buttons);
+    requestScreenOn();
+    buttonReleased = 0;
+  }
+  if (!buttonReleased && !(buttons & 0x0F)) {
+    buttonReleased = 1;
+  }
 }
 
 void waitForNextSample() {
