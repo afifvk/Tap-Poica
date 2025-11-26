@@ -8,8 +8,8 @@ public class NoteObject : MonoBehaviour
     public BoxCollider2D lineCollider;
     public CircleCollider2D tailCollider, headCollider;
 
-    const float WindowGood = 0.5f;
-    const float WindowNormal = 0.25f;
+    const float WindowGood = 2f;
+    const float WindowNormal = 1.5f;
 
     [Header("Effects")] public GameObject hitEffect;
     public GameObject goodEffect, perfectEffect, missEffect;

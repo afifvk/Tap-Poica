@@ -17,7 +17,7 @@ public class Demo : MonoBehaviour
     public string deviceId;
     public readonly string deviceName = "TapPioca";
     public readonly string serviceId = "67676767-6702-6767-6767-676767676767";
-    public readonly string characteristicId = "TODO";
+    public readonly string characteristicId = "67676767-6703-6767-6767-676767676767";
 
     bool isScanningDevices = false;
     bool isScanningServices = false;
