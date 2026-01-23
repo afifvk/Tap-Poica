@@ -63,22 +63,6 @@ public class GameManager :MonoBehaviour
     // Bluetooth stuff
     readonly LightstickInput _lightstickInput = new();
 
-    void Awake()
-    {
-        if(Instance)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        Instance = this;
-
-        DontDestroyOnLoad(gameObject);
-        // DontDestroyOnLoad(_lightstickInput.button);
-        // DontDestroyOnLoad(resultsScreen);
-        // DontDestroyOnLoad(nextLevelButton);
-    }
-
     void Start()
     {
         Debug.Log(
@@ -91,7 +75,6 @@ public class GameManager :MonoBehaviour
         _noteSpawner = gameObject.AddComponent<NoteSpawner>();
         _music = gameObject.AddComponent<AudioSource>();
         _lightstickInput.button = inputButton.GetComponent<ButtonController>();
-        _levelLoader.Load(LevelManager.Instance.level, LevelManager.Instance.difficulty, OnLevelReady);
 
         scoreTxt.text = "Score: 0";
         currentMultiplier = 1;
@@ -105,19 +88,13 @@ public class GameManager :MonoBehaviour
     {
 
         if(!_levelLoaded) return;
-        // _music.Play();
 
         if(BleConnection.Instance.controllerConnected)
         {
+            // _music.Play();
+            _levelLoader.Load(LevelManager.Instance.level, LevelManager.Instance.difficulty, OnLevelReady);
             PollController();
         }
-        // else
-        // {
-        // BleConnection.Instance.ConnectController();
-        // }
-
-        // if(_startingPoint) return;
-        // _startingPoint = true;
 
         if(_isHoldingNote)
         {
@@ -137,11 +114,11 @@ public class GameManager :MonoBehaviour
     {
         while (BleApi.PollData(out var res, false))
         {
-            Debug.Log("Polling controller...");
+            // Debug.Log("Polling controller...");
             LightStickPacket packet;
             packet.delay = BitConverter.ToInt32(res.buf, 0);
             packet.data = res.buf[4];
-            Debug.Log("Delay: " + packet.delay + "us");
+            // Debug.Log("Delay: " + packet.delay + "us");
 
             _lightstickInput.UpdateFromPacket(packet);
         }

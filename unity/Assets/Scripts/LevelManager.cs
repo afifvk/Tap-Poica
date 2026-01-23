@@ -15,25 +15,6 @@ public class LevelManager :MonoBehaviour
     public Level level;
     public LevelDifficulty difficulty;
     AudioSource _lobbyMusic;
-    // public LevelData levelData;
-
-    void Awake()
-    {
-        if(Instance)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        Instance = this;
-        _lobbyMusic = gameObject.AddComponent<AudioSource>();
-
-
-        DontDestroyOnLoad(gameObject);
-        // DontDestroyOnLoad(levelDropdown);
-        // DontDestroyOnLoad(difficultyDropdown);
-        // DontDestroyOnLoad(startButton);
-    }
 
     void Start()
     {
@@ -86,7 +67,5 @@ public class LevelManager :MonoBehaviour
     {
         if(!BleConnection.Instance.controllerConnected) return;
         _lobbyMusic.Stop();
-        SceneManager.LoadScene("MainScene");
-        // SceneManager.SetActiveScene(SceneManager.GetSceneByName("MainScene"));
     }
 }
