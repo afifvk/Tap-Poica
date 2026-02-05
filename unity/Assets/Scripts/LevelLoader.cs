@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using OsuParser;
 using UnityEngine;
@@ -10,18 +9,18 @@ public class LevelLoader :MonoBehaviour
 {
     public void Load(Level level, LevelDifficulty difficultyIndex, Action<OsuBeatmap> onLoaded)
     {
-        Debug.Log($"LevelLoader: Requested load for {level} at difficulty {difficultyIndex}");
+        // Debug.Log($"LevelLoader: Requested load for {level} at difficulty {difficultyIndex}");
         var levelMetadata = LevelData.LevelRegistry[(int)level];
 
         if(levelMetadata == null)
         {
-            Debug.LogError($"LevelLoader: Could not find level named '{level}'");
+            // Debug.LogError($"LevelLoader: Could not find level named '{level}'");
             return;
         }
 
         if(difficultyIndex < 0 || difficultyIndex >= (LevelDifficulty)levelMetadata.difficulties)
         {
-            Debug.LogError($"LevelLoader: Difficulty index {difficultyIndex} is out of range for {level}");
+            // Debug.LogError($"LevelLoader: Difficulty index {difficultyIndex} is out of range for {level}");
             return;
         }
 
@@ -45,10 +44,10 @@ public class LevelLoader :MonoBehaviour
         {
             yield return www.SendWebRequest();
 
-            if(www.result != UnityWebRequest.Result.Success)
-                Debug.LogError($"LevelLoader Error: {www.error} at path {mapPath}");
+            // if(www.result != UnityWebRequest.Result.Success)
+                // Debug.LogError($"LevelLoader Error: {www.error} at path {mapPath}");
 
-            Debug.Log("LevelLoader: File read. Parsing...");
+            // Debug.Log("LevelLoader: File read. Parsing...");
 
             // Parse it using the OsuParser we made earlier
             loadedOsuBeatmap = FileParser.Parse(www.downloadHandler.text);
@@ -73,13 +72,11 @@ public class LevelLoader :MonoBehaviour
 
         yield return wwwAudio.SendWebRequest();
 
-        if(wwwAudio.result != UnityWebRequest.Result.Success)
-            Debug.LogError($"LevelLoader Audio Error: {wwwAudio.error} at path {audioPath}");
+        // if(wwwAudio.result != UnityWebRequest.Result.Success)
+            // Debug.LogError($"LevelLoader Audio Error: {wwwAudio.error} at path {audioPath}");
 
         callback?.Invoke(wwwAudio.result == UnityWebRequest.Result.Success
             ? DownloadHandlerAudioClip.GetContent(wwwAudio)
             : null);
     }
-
-    // Simple data class for your registry
 }

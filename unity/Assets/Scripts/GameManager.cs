@@ -3,18 +3,14 @@ using System.Globalization;
 using OsuParser;
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameManager :MonoBehaviour
 {
     public static GameManager Instance;
 
-    // [// Header("Level Settings")]
-    // public LevelData levelData;
-
-    [Header("Note Settings")] public GameObject shortNotePrefab;
-    public GameObject longNotePrefab;
+    [Header("Note Settings")] public NoteObject shortNotePrefab;
+    public NoteObject longNotePrefab;
     public float offsetMs = 100f; // offset to sync with music
     public float noteStart = 9f;
     public float leadTimeMs = 2000f; // how early to spawn before it reaches button
@@ -31,7 +27,8 @@ public class GameManager :MonoBehaviour
     [Header("UI Elements")] public TextMeshProUGUI scoreTxt;
     public TextMeshProUGUI multiTxt;
 
-    [Header("Results UI")] public GameObject resultsScreen;
+    [Header("Results UI")] public GameObject menuScreen;
+    public GameObject resultsScreen;
     public TextMeshProUGUI percentHitTxt;
     public TextMeshProUGUI normalHitTxt;
     public TextMeshProUGUI goodHitTxt;
@@ -41,8 +38,9 @@ public class GameManager :MonoBehaviour
     public TextMeshProUGUI finalScoreText;
 
     [Header("Next Level Button")] public Button nextLevelButton;
-
     public GameObject inputButton;
+    public LevelManager levelManager;
+    public AudioSource music;
 
     // [Header("Stats Tracking")]
     float _totalNotes;
@@ -53,27 +51,24 @@ public class GameManager :MonoBehaviour
 
     bool _levelLoaded;
 
-    bool _resultsShown;
     bool _isHoldingNote;
 
     NoteSpawner _noteSpawner;
     LevelLoader _levelLoader;
-    AudioSource _music;
 
     // Bluetooth stuff
     readonly LightstickInput _lightstickInput = new();
 
     void Start()
     {
-        Debug.Log(
-            BleConnection.Instance.controllerConnected ? "Controller connected!" : "Controller not connected.");
+        // Debug.Log(
+        // BleConnection.Instance.controllerConnected ? "Controller connected!" : "Controller not connected.");
         // 240FPS for notes spawning
         Time.fixedDeltaTime = 1f / 240f;
 
         Instance = this;
         _levelLoader = gameObject.AddComponent<LevelLoader>();
         _noteSpawner = gameObject.AddComponent<NoteSpawner>();
-        _music = gameObject.AddComponent<AudioSource>();
         _lightstickInput.button = inputButton.GetComponent<ButtonController>();
 
         scoreTxt.text = "Score: 0";
@@ -86,15 +81,7 @@ public class GameManager :MonoBehaviour
 
     void Update()
     {
-
         if(!_levelLoaded) return;
-
-        if(BleConnection.Instance.controllerConnected)
-        {
-            // _music.Play();
-            _levelLoader.Load(LevelManager.Instance.level, LevelManager.Instance.difficulty, OnLevelReady);
-            PollController();
-        }
 
         if(_isHoldingNote)
         {
@@ -105,9 +92,9 @@ public class GameManager :MonoBehaviour
             HoldEnd();
         }
 
-        if(_resultsShown || _music.isPlaying) return;
+        if(resultsScreen.activeSelf || music.isPlaying) return;
+        Debug.Log("Level ended, showing results...");
         ShowResults();
-        _resultsShown = true;
     }
 
     void PollController()
@@ -127,16 +114,17 @@ public class GameManager :MonoBehaviour
     void OnLevelReady(OsuBeatmap osuBeatmap)
     {
         _levelLoaded = true;
-        _music.clip = osuBeatmap.audioClip;
-        _music.Play();
-        _music.loop = false;
+        music.clip = osuBeatmap.audioClip;
+        music.Play();
+        music.loop = false;
+        menuScreen.SetActive(false);
         _noteSpawner.transform.position = Vector3.up * noteStart;
         _noteSpawner.longNotePrefab = longNotePrefab;
         _noteSpawner.shortNotePrefab = shortNotePrefab;
         _noteSpawner.offsetMs = offsetMs;
         _noteSpawner.noteStart = noteStart;
         _noteSpawner.leadTimeMs = leadTimeMs;
-        _noteSpawner.Initialize(osuBeatmap, _music);
+        _noteSpawner.Initialize(osuBeatmap, music);
         _totalNotes = osuBeatmap.notesCount;
     }
 
@@ -145,7 +133,6 @@ public class GameManager :MonoBehaviour
         _isHoldingNote = false;
 
         resultsScreen.SetActive(true);
-        _resultsShown = true;
 
         normalHitTxt.text = _normalHits.ToString(CultureInfo.InvariantCulture);
         goodHitTxt.text = _goodHits.ToString(CultureInfo.InvariantCulture);
@@ -172,7 +159,7 @@ public class GameManager :MonoBehaviour
     }
 
     // --- Hit & Hold Notes Programmatically ---
-    public void HitNote()
+    public static void HitNote()
     {
         // Only hit latest note that can be pressed
         NoteObject latest = null;
@@ -187,8 +174,7 @@ public class GameManager :MonoBehaviour
             }
         }
 
-        if(!latest) return;
-        latest.Pressed();
+        latest?.Pressed();
     }
 
     public void HoldStart()
@@ -209,18 +195,18 @@ public class GameManager :MonoBehaviour
     {
         _isHoldingNote = false;
 
-        foreach (var n in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
+        foreach (var noteObject in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
             // End all held notes
-            if(n._lifetimeMs > 0
-               || !n.isBeingHeld
-               || n.noteType != NoteType.Long) continue;
-            n.HoldEnd();
+            if(noteObject._lifetimeMs > 0
+               || !noteObject.isBeingHeld
+               || noteObject.noteType != NoteType.Long) continue;
+            noteObject.HoldEnd();
         }
     }
 
     // --- Scoring System ---
-    public void NoteHit()
+    void NoteHit()
     {
         if(currentMultiplier - 1 < multiplierThresholds.Length)
         {
@@ -266,10 +252,18 @@ public class GameManager :MonoBehaviour
         _missedHits++;
     }
 
+    public void LoadLevel()
+    {
+        if (!BleConnection.Instance.controllerConnected || _levelLoaded) return;
+        music.Stop();
+        _levelLoader.Load(levelManager.level, levelManager.difficulty, OnLevelReady);
+    }
+
     public void ExitToStart()
     {
-        _music.Stop();
-        SceneManager.LoadScene("Scenes/StartScene");
-        // SceneManager.SetActiveScene(SceneManager.GetSceneByName("StartScene"));
+        music.Stop();
+        _levelLoaded = false;
+        resultsScreen.SetActive(false);
+        menuScreen.SetActive(true);
     }
 }

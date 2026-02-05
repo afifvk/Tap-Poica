@@ -38,7 +38,7 @@ public class ButtonController :MonoBehaviour
     {
         // _spriteRenderer.sprite = pressedImage;
         transform.Rotate(Vector3.forward, 180f);
-        GameManager.Instance.HitNote();
+        GameManager.HitNote();
         // Invoke(nameof(ResetSprite), 0.12f);
     }
 

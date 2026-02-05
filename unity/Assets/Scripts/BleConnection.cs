@@ -9,7 +9,7 @@ public class BleConnection :MonoBehaviour
 
     const string DeviceName = "TapPioca";
     const string ServiceId = "{67676701-6767-6767-6767-676767676767}";
-    const string WriteCharacteristicId = "{67676702-6767-6767-6767-676767676767}";
+    // const string WriteCharacteristicId = "{67676702-6767-6767-6767-676767676767}";
     const string ListenCharacteristicId = "{67676703-6767-6767-6767-676767676767}";
 
     readonly Dictionary<string, Dictionary<string, string>> _devices = new();
@@ -18,23 +18,12 @@ public class BleConnection :MonoBehaviour
     bool _isScanningServices;
     bool _isScanningCharacteristics;
     bool _isSubscribed;
-    string _lastBleError = "Ok";
+    // string _lastBleError = "Ok";
     [HideInInspector] public bool controllerConnected;
-
-    void Awake()
-    {
-        if(!Instance)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            return;
-        }
-
-        Destroy(gameObject);
-    }
 
     void Start()
     {
+        Instance = this;
         ConnectController();
     }
 
@@ -44,7 +33,7 @@ public class BleConnection :MonoBehaviour
         ConnectController();
     }
 
-    public void ConnectController()
+    void ConnectController()
     {
         if(!_isScanningDevices)
         {
@@ -67,10 +56,10 @@ public class BleConnection :MonoBehaviour
         }
 
         // log potential errors
-        BleApi.GetError(out var res);
-        if(_lastBleError == res.msg) return;
-        Debug.LogError("BleApi error: " + res.msg);
-        _lastBleError = res.msg;
+        // BleApi.GetError(out var res);
+        // if(_lastBleError == res.msg) return;
+        // Debug.LogError("BleApi error: " + res.msg);
+        // _lastBleError = res.msg;
     }
 
     void OnApplicationQuit()

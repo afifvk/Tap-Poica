@@ -21,21 +21,21 @@ public class LightstickInput
 
         if(_lightStickData.HasFlag(LightStickData.Tap))
         {
-            Debug.Log("TAP");
+            // Debug.Log("TAP");
             button.OnTapFromController();
             _lightStickData &= ~LightStickData.Tap; // Clear the flag after processing
         }
 
         if(_lightStickData.HasFlag(LightStickData.ShakeStart))
         {
-            Debug.Log("HOLD START");
+            // Debug.Log("HOLD START");
             button.OnHoldStartFromController();
             _lightStickData &= ~LightStickData.ShakeStart; // Clear the flag after processing
         }
 
         if(_lightStickData.HasFlag(LightStickData.ShakeEnd))
         {
-            Debug.Log("HOLD END");
+            // Debug.Log("HOLD END");
             button.OnHoldEndFromController();
             _lightStickData &= ~LightStickData.ShakeEnd; // Clear the flag after processing
         }

@@ -52,17 +52,18 @@ namespace OsuParser
                     }
                     case "[HitObjects]":
                     {
-                        var obj = ParseLine(trimmed);
-                        if(obj != null) data.hitObjects.Add(obj);
+                        var hitObject = ParseLine(trimmed);
+                        if(hitObject != null) data.hitObjects.Add(hitObject);
                         break;
                     }
                 }
             }
-            
-            foreach (var obj in data.hitObjects)
+
+            foreach (var hitObject in data.hitObjects)
             {
                 data.notesCount++;
-                if (obj is Slider slider)
+
+                if(hitObject is Slider slider)
                 {
                     data.notesCount += slider.Slides - 1;
                 }
@@ -131,22 +132,20 @@ namespace OsuParser
                     HitSample = parts.Length > 6 ? parts[6] : ""
                 };
 
-            if(type.HasFlag(HitObjectType.ManiaHold))
-            {
-                var sampleParts = parts[5].Split(':');
-                return new ManiaHold()
-                {
-                    X = x,
-                    Y = y,
-                    Time = time,
-                    Type = type,
-                    HitSound = hitSound,
-                    EndTime = int.Parse(sampleParts[0]),
-                    HitSample = sampleParts[1],
-                };
-            }
+            if(!type.HasFlag(HitObjectType.ManiaHold))
+                return type.HasFlag(HitObjectType.Slider) ? ParseSlider(parts, x, y, time, type, hitSound) : null;
 
-            return type.HasFlag(HitObjectType.Slider) ? ParseSlider(parts, x, y, time, type, hitSound) : null;
+            var sampleParts = parts[5].Split(':');
+            return new ManiaHold()
+            {
+                X = x,
+                Y = y,
+                Time = time,
+                Type = type,
+                HitSound = hitSound,
+                EndTime = int.Parse(sampleParts[0]),
+                HitSample = sampleParts[1],
+            };
 
         }
 

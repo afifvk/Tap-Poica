@@ -19,8 +19,8 @@ public class NoteData
 
 public class NoteSpawner : MonoBehaviour
 {
-    public GameObject shortNotePrefab;
-    public GameObject longNotePrefab;
+    public NoteObject shortNotePrefab;
+    public NoteObject longNotePrefab;
 
     public float offsetMs; // offset to sync with music
     public float noteStart;
@@ -67,16 +67,15 @@ public class NoteSpawner : MonoBehaviour
 
         if (!prefabToSpawn)
         {
-            Debug.LogError("Prefab to spawn is not assigned!");
+            // Debug.LogError("Prefab to spawn is not assigned!");
             return;
         }
 
-        var gameObj = Instantiate(prefabToSpawn, transform.position, Quaternion.identity, transform);
-        var noteObject = gameObj.GetComponent<NoteObject>();
+        var noteObject = Instantiate(prefabToSpawn, transform.position, Quaternion.identity, transform);
 
         if (!noteObject)
         {
-            Debug.LogError("Spawned object does not have a NoteObject component!");
+            // Debug.LogError("Spawned object does not have a NoteObject component!");
             return;
         }
 
