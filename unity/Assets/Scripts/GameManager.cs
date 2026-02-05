@@ -171,7 +171,7 @@ public class GameManager :MonoBehaviour
         {
             if(!noteObject.CanBePressed() || noteObject.noteType != NoteType.Short) continue;
 
-            if(!latest || noteObject._lifetimeMs < latest._lifetimeMs)
+            if(!latest || noteObject.LifetimeMs < latest.LifetimeMs)
                 latest = noteObject;
         }
 
@@ -185,7 +185,7 @@ public class GameManager :MonoBehaviour
         foreach (var noteObject in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
             // Start all holds that can be started
-            if(noteObject._lifetimeMs > 0
+            if(noteObject.LifetimeMs > 0
                || noteObject.noteType != NoteType.Long
                || noteObject.isBeingHeld) continue;
             noteObject.HoldStart();
@@ -199,7 +199,7 @@ public class GameManager :MonoBehaviour
         foreach (var noteObject in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
             // End all held notes
-            if(noteObject._lifetimeMs > 0
+            if(noteObject.LifetimeMs > 0
                || !noteObject.isBeingHeld
                || noteObject.noteType != NoteType.Long) continue;
             noteObject.HoldEnd();

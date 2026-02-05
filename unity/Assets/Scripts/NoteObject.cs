@@ -18,13 +18,13 @@ public class NoteObject : MonoBehaviour
     [HideInInspector] public bool isBeingHeld = false;
     float _speed;
     double _durationMs;
-    public float _lifetimeMs { get; private set; }
+    public float LifetimeMs { get; private set; }
 
     public void Initialize(NoteData data, float speed, float lifetimeMs)
     {
         _durationMs = data.durationMs;
         _speed = speed;
-        _lifetimeMs = lifetimeMs;
+        LifetimeMs = lifetimeMs;
 
         if (noteType != NoteType.Long) return;
 
@@ -48,7 +48,7 @@ public class NoteObject : MonoBehaviour
 
     void FixedUpdate()
     {
-        _lifetimeMs -= Time.fixedDeltaTime * 1000f;
+        LifetimeMs -= Time.fixedDeltaTime * 1000f;
         transform.Translate(_speed * Time.fixedDeltaTime * Vector3.down);
 
         if (TooLate())
@@ -65,7 +65,7 @@ public class NoteObject : MonoBehaviour
 
     public bool CanBePressed()
     {
-        return _lifetimeMs <= WindowMissMs;
+        return LifetimeMs <= WindowMissMs;
     }
 
     // Deprecated.
@@ -101,9 +101,9 @@ public class NoteObject : MonoBehaviour
         switch (noteType)
         {
             case NoteType.Short:
-                return _lifetimeMs < -WindowMissMs;
+                return LifetimeMs < -WindowMissMs;
             case NoteType.Long:
-                return _lifetimeMs + (float)_durationMs < -WindowMissMs;
+                return LifetimeMs + (float)_durationMs < -WindowMissMs;
         }
         return true;
     }
@@ -111,7 +111,7 @@ public class NoteObject : MonoBehaviour
     // Called when a single note is hit
     public void Pressed()
     {
-        Judge(_lifetimeMs);
+        Judge(LifetimeMs);
         Destroy(gameObject);
     }
 
@@ -120,7 +120,7 @@ public class NoteObject : MonoBehaviour
     {
         if (noteType != NoteType.Long) return;
         isBeingHeld = true;
-        Judge(_lifetimeMs);
+        Judge(LifetimeMs);
     }
 
     // Called when player stops holding a long note
@@ -129,7 +129,7 @@ public class NoteObject : MonoBehaviour
         if (!isBeingHeld) return;
         isBeingHeld = false;
 
-        Judge(_lifetimeMs + (float)_durationMs);
+        Judge(LifetimeMs + (float)_durationMs);
         if (noteType == NoteType.Long && isBeingHeld)
         {
             Destroy(lineCollider.gameObject);

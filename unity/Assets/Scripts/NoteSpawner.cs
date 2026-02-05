@@ -34,10 +34,11 @@ public class NoteSpawner : MonoBehaviour
 
     public void Initialize(OsuBeatmap osuBeatmap, AudioSource source)
     {
-        Debug.Log("Initializing NoteSpawner with beatmap data.");
+        // Debug.Log("Initializing NoteSpawner with beatmap data.");
         _bpm = osuBeatmap.globalBpm;
         _audioSource = source;
         _notes = NoteConverter.Convert(osuBeatmap);
+        Debug.Log($"Converted {_notes.Count} notes from beatmap.");
         if (!osuBeatmap.audioClip) return;
         _audioSource.clip = osuBeatmap.audioClip;
 
