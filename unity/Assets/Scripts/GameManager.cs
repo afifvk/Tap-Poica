@@ -83,6 +83,11 @@ public class GameManager :MonoBehaviour
     {
         if(!_levelLoaded) return;
 
+        if(BleConnection.Instance.controllerConnected)
+        {
+            PollController();
+        }
+
         if(_isHoldingNote)
         {
             HoldStart();
@@ -158,20 +163,16 @@ public class GameManager :MonoBehaviour
         nextLevelButton.gameObject.SetActive(true);
     }
 
-    // --- Hit & Hold Notes Programmatically ---
     public static void HitNote()
     {
-        // Only hit latest note that can be pressed
         NoteObject latest = null;
 
-        foreach (var n in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
+        foreach (var noteObject in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
-            if(!n.CanBePressed() || n.noteType != NoteType.Short) continue;
+            if(!noteObject.CanBePressed() || noteObject.noteType != NoteType.Short) continue;
 
-            if(!latest || n._lifetimeMs < latest._lifetimeMs)
-            {
-                latest = n;
-            }
+            if(!latest || noteObject._lifetimeMs < latest._lifetimeMs)
+                latest = noteObject;
         }
 
         latest?.Pressed();
@@ -181,13 +182,13 @@ public class GameManager :MonoBehaviour
     {
         _isHoldingNote = true;
 
-        foreach (var n in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
+        foreach (var noteObject in FindObjectsByType<NoteObject>(FindObjectsSortMode.None))
         {
             // Start all holds that can be started
-            if(n._lifetimeMs > 0
-               || n.noteType != NoteType.Long
-               || n.isBeingHeld) continue;
-            n.HoldStart();
+            if(noteObject._lifetimeMs > 0
+               || noteObject.noteType != NoteType.Long
+               || noteObject.isBeingHeld) continue;
+            noteObject.HoldStart();
         }
     }
 
@@ -205,7 +206,6 @@ public class GameManager :MonoBehaviour
         }
     }
 
-    // --- Scoring System ---
     void NoteHit()
     {
         if(currentMultiplier - 1 < multiplierThresholds.Length)
@@ -254,7 +254,7 @@ public class GameManager :MonoBehaviour
 
     public void LoadLevel()
     {
-        if (!BleConnection.Instance.controllerConnected || _levelLoaded) return;
+        if(!BleConnection.Instance.controllerConnected || _levelLoaded) return;
         music.Stop();
         _levelLoader.Load(levelManager.level, levelManager.difficulty, OnLevelReady);
     }

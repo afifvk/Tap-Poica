@@ -119,9 +119,9 @@ public class BleConnection :MonoBehaviour
                 _devices[res.id]["name"] = res.name;
             if(res.isConnectableUpdated)
                 _devices[res.id]["isConnectable"] = res.isConnectable.ToString();
-            if (res.name != "") {
-                Debug.Log("Found name: " + res.name + " (" + res.isConnectable.ToString() + ")");
-            }
+            // if (res.name != "") {
+                // Debug.Log("Found name: " + res.name + " (" + res.isConnectable.ToString() + ")");
+            // }
 
             // Consider only devices which have the right name
             // Sometimes the tinyscreen never adverts itself as connectable and this connects faster
@@ -129,7 +129,7 @@ public class BleConnection :MonoBehaviour
             if (_devices[res.id]["name"] != DeviceName) continue;
             // This is our device
             StartStopDeviceScan();
-            Debug.Log("Connecting to controller...");
+            // Debug.Log("Connecting to controller...");
             _deviceId = res.id;
             StartServiceScan();
             return;
