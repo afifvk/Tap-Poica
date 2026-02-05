@@ -8,7 +8,9 @@ public class BleConnection :MonoBehaviour
     public Text statusText;
 
     const string DeviceName = "TapPioca";
+
     const string ServiceId = "{67676701-6767-6767-6767-676767676767}";
+
     // const string WriteCharacteristicId = "{67676702-6767-6767-6767-676767676767}";
     const string ListenCharacteristicId = "{67676703-6767-6767-6767-676767676767}";
 
@@ -17,13 +19,20 @@ public class BleConnection :MonoBehaviour
     bool _isScanningDevices;
     bool _isScanningServices;
     bool _isScanningCharacteristics;
+
     bool _isSubscribed;
+
     // string _lastBleError = "Ok";
     [HideInInspector] public bool controllerConnected;
 
+    void Awake()
+    {
+        if(Instance == null)
+            Instance = this;
+    }
+
     void Start()
     {
-        Instance = this;
         ConnectController();
     }
 
@@ -120,13 +129,13 @@ public class BleConnection :MonoBehaviour
             if(res.isConnectableUpdated)
                 _devices[res.id]["isConnectable"] = res.isConnectable.ToString();
             // if (res.name != "") {
-                // Debug.Log("Found name: " + res.name + " (" + res.isConnectable.ToString() + ")");
+            // Debug.Log("Found name: " + res.name + " (" + res.isConnectable.ToString() + ")");
             // }
 
             // Consider only devices which have the right name
             // Sometimes the tinyscreen never adverts itself as connectable and this connects faster
             // Even if it's not connectable, we can try to connect and it'll work anyway 💀
-            if (_devices[res.id]["name"] != DeviceName) continue;
+            if(_devices[res.id]["name"] != DeviceName) continue;
             // This is our device
             StartStopDeviceScan();
             // Debug.Log("Connecting to controller...");

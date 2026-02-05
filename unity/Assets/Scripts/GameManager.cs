@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using OsuParser;
 using TMPro;
+using Unity.IntegerTime;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -59,6 +60,12 @@ public class GameManager :MonoBehaviour
     // Bluetooth stuff
     readonly LightstickInput _lightstickInput = new();
 
+    void Awake()
+    {
+        if(Instance == null)
+            Instance = this;
+    }
+
     void Start()
     {
         // Debug.Log(
@@ -66,7 +73,6 @@ public class GameManager :MonoBehaviour
         // 240FPS for notes spawning
         Time.fixedDeltaTime = 1f / 240f;
 
-        Instance = this;
         _levelLoader = gameObject.AddComponent<LevelLoader>();
         _noteSpawner = gameObject.AddComponent<NoteSpawner>();
         _lightstickInput.button = inputButton.GetComponent<ButtonController>();
@@ -84,36 +90,26 @@ public class GameManager :MonoBehaviour
         if(!_levelLoaded) return;
 
         if(BleConnection.Instance.controllerConnected)
-        {
             PollController();
-        }
 
         if(_isHoldingNote)
-        {
             HoldStart();
-        }
         else
-        {
             HoldEnd();
-        }
 
-        if(resultsScreen.activeSelf || music.isPlaying) return;
-        Debug.Log("Level ended, showing results...");
+        if(resultsScreen.activeSelf || (music.isPlaying && music.time < music.clip.length)) return;
+        Debug.Log(music.time + " / " + music.clip.length);
         ShowResults();
     }
 
     void PollController()
     {
         while (BleApi.PollData(out var res, false))
-        {
-            // Debug.Log("Polling controller...");
-            LightStickPacket packet;
-            packet.delay = BitConverter.ToInt32(res.buf, 0);
-            packet.data = res.buf[4];
-            // Debug.Log("Delay: " + packet.delay + "us");
-
-            _lightstickInput.UpdateFromPacket(packet);
-        }
+            _lightstickInput.UpdateFromPacket(new LightStickPacket
+            {
+                delay = BitConverter.ToInt32(res.buf, 0),
+                data = res.buf[4]
+            });
     }
 
     void OnLevelReady(OsuBeatmap osuBeatmap)
@@ -265,5 +261,6 @@ public class GameManager :MonoBehaviour
         _levelLoaded = false;
         resultsScreen.SetActive(false);
         menuScreen.SetActive(true);
+        music.Play();
     }
 }
