@@ -472,7 +472,7 @@ MonoBehaviour:
   m_Direction: 2
   m_Value: 1
   m_Size: 1
-  m_NumberOfSteps: 2
+  m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -1771,7 +1771,7 @@ MonoBehaviour:
   m_Elasticity: 0.1
   m_Inertia: 1
   m_DecelerationRate: 0.135
-  m_ScrollSensitivity: 1
+  m_ScrollSensitivity: 10
   m_Viewport: {fileID: 335611910}
   m_HorizontalScrollbar: {fileID: 0}
   m_VerticalScrollbar: {fileID: 1470104860}
@@ -2084,7 +2084,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -120, y: 0}
+  m_SizeDelta: {x: -120, y: -40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &559018002
 MonoBehaviour:
@@ -3779,7 +3779,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 40}
+  m_SizeDelta: {x: 0, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1077172031
 MonoBehaviour:
@@ -4366,7 +4366,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 240}
+  m_SizeDelta: {x: 0, y: 120}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &1392113487
 GameObject:
@@ -4601,9 +4601,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 742418768}
-        m_TargetAssemblyTypeName: LevelManager, Assembly-CSharp
-        m_MethodName: StartLevel
+      - m_Target: {fileID: 1420470212}
+        m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
+        m_MethodName: LoadLevel
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -4690,7 +4690,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -200}
-  m_SizeDelta: {x: 600, y: 150}
+  m_SizeDelta: {x: 600, y: 160}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1420343403
 MonoBehaviour:
@@ -4844,8 +4844,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16d8edd861b1c8d48b733050776285e2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shortNotePrefab: {fileID: 8664187275873934975, guid: 7eea74282711d0246b1d57ba71722ccd, type: 3}
-  longNotePrefab: {fileID: 5732230104749981023, guid: b3c0518bec97b0b4b9fad17c3aad75e6, type: 3}
+  shortNotePrefab: {fileID: -4462473705900726342, guid: 7eea74282711d0246b1d57ba71722ccd, type: 3}
+  longNotePrefab: {fileID: 5152675343561834744, guid: b3c0518bec97b0b4b9fad17c3aad75e6, type: 3}
   offsetMs: 100
   noteStart: 9
   leadTimeMs: 1000
@@ -4858,7 +4858,7 @@ MonoBehaviour:
   multiplierThresholds: 040000000800000010000000
   scoreTxt: {fileID: 1791990396}
   multiTxt: {fileID: 2046179003}
-  menuScreen: {fileID: 0}
+  menuScreen: {fileID: 188731042}
   resultsScreen: {fileID: 766832845}
   percentHitTxt: {fileID: 1903861625}
   normalHitTxt: {fileID: 1759260976}
@@ -4953,9 +4953,9 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1625031737}
   m_HandleRect: {fileID: 1625031736}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
-  m_NumberOfSteps: 2
+  m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -5031,7 +5031,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 160}
+  m_SizeDelta: {x: 0, y: 80}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &1534099080
 GameObject:
@@ -5874,7 +5874,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -120, y: 0}
+  m_SizeDelta: {x: -120, y: -40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1767884668
 MonoBehaviour:
@@ -7141,7 +7141,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 40}
+  m_SizeDelta: {x: 0, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2117828648
 MonoBehaviour:
