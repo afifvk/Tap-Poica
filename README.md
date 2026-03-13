@@ -2,6 +2,8 @@
 
 By: ICT1011 GroupP3C
 
+Tap-Poica is a fun rhythm game where players wirelessly connect their TinyScreen as a controller to their computer, and hit notes by shaking or tapping their TinyScreen. Tap-Poica is able to parse classic Osu! beatmaps and load them as Tap-poica levels.
+
 ## Arduino
 
 Setup instructions:
